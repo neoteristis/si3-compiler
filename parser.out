@@ -1,0 +1,372 @@
+Grammar:
+
+Rule 0     S' -> prog
+Rule 1     prog -> listeInstructions
+Rule 2     listeInstructions -> instruction listeInstructions
+Rule 3     listeInstructions -> instruction
+Rule 4     instruction -> ecrire
+Rule 5     ecrire -> ECRIRE ( expr ) ;
+Rule 6     expr -> ENTIER
+Rule 7     expr -> ( expr )
+Rule 8     expr -> - expr  [precedence=right, level=3]
+Rule 9     expr -> expr / expr  [precedence=left, level=2]
+Rule 10    expr -> expr - expr  [precedence=left, level=1]
+Rule 11    expr -> expr * expr  [precedence=left, level=2]
+Rule 12    expr -> expr + expr  [precedence=left, level=1]
+
+Unused terminals:
+
+    ET
+    AFFECT
+    SUPERIEUR_OU_EGAL
+    EQUAL
+    SINON
+    RETOURNER
+    OU
+    INFERIEUR_OU_EGAL
+    SI
+    IDENTIFIANT
+    BOOLEAN
+    TANTQUE
+    SEPARATOR
+    DIFFERENT
+    NON
+
+Terminals, with rules where they appear:
+
+(                    : 5 7
+)                    : 5 7
+*                    : 11
++                    : 12
+-                    : 8 10
+/                    : 9
+;                    : 5
+AFFECT               : 
+BOOLEAN              : 
+DIFFERENT            : 
+ECRIRE               : 5
+ENTIER               : 6
+EQUAL                : 
+ET                   : 
+IDENTIFIANT          : 
+INFERIEUR_OU_EGAL    : 
+NON                  : 
+OU                   : 
+RETOURNER            : 
+SEPARATOR            : 
+SI                   : 
+SINON                : 
+SUPERIEUR_OU_EGAL    : 
+TANTQUE              : 
+error                : 
+
+Nonterminals, with rules where they appear:
+
+ecrire               : 4
+expr                 : 5 7 8 9 9 10 10 11 11 12 12
+instruction          : 2 3
+listeInstructions    : 1 2
+prog                 : 0
+
+
+state 0
+
+    (0) S' -> . prog
+    (1) prog -> . listeInstructions
+    (2) listeInstructions -> . instruction listeInstructions
+    (3) listeInstructions -> . instruction
+    (4) instruction -> . ecrire
+    (5) ecrire -> . ECRIRE ( expr ) ;
+    ECRIRE          shift and go to state 5
+
+    prog                           shift and go to state 1
+    listeInstructions              shift and go to state 2
+    instruction                    shift and go to state 3
+    ecrire                         shift and go to state 4
+
+state 1
+
+    (0) S' -> prog .
+
+
+state 2
+
+    (1) prog -> listeInstructions .
+    $end            reduce using rule 1 (prog -> listeInstructions .)
+
+
+state 3
+
+    (2) listeInstructions -> instruction . listeInstructions
+    (3) listeInstructions -> instruction .
+    (2) listeInstructions -> . instruction listeInstructions
+    (3) listeInstructions -> . instruction
+    (4) instruction -> . ecrire
+    (5) ecrire -> . ECRIRE ( expr ) ;
+    $end            reduce using rule 3 (listeInstructions -> instruction .)
+    ECRIRE          shift and go to state 5
+
+    instruction                    shift and go to state 3
+    listeInstructions              shift and go to state 6
+    ecrire                         shift and go to state 4
+
+state 4
+
+    (4) instruction -> ecrire .
+    ECRIRE          reduce using rule 4 (instruction -> ecrire .)
+    $end            reduce using rule 4 (instruction -> ecrire .)
+
+
+state 5
+
+    (5) ecrire -> ECRIRE . ( expr ) ;
+    (               shift and go to state 7
+
+
+state 6
+
+    (2) listeInstructions -> instruction listeInstructions .
+    $end            reduce using rule 2 (listeInstructions -> instruction listeInstructions .)
+
+
+state 7
+
+    (5) ecrire -> ECRIRE ( . expr ) ;
+    (6) expr -> . ENTIER
+    (7) expr -> . ( expr )
+    (8) expr -> . - expr
+    (9) expr -> . expr / expr
+    (10) expr -> . expr - expr
+    (11) expr -> . expr * expr
+    (12) expr -> . expr + expr
+    ENTIER          shift and go to state 10
+    (               shift and go to state 8
+    -               shift and go to state 11
+
+    expr                           shift and go to state 9
+
+state 8
+
+    (7) expr -> ( . expr )
+    (6) expr -> . ENTIER
+    (7) expr -> . ( expr )
+    (8) expr -> . - expr
+    (9) expr -> . expr / expr
+    (10) expr -> . expr - expr
+    (11) expr -> . expr * expr
+    (12) expr -> . expr + expr
+    ENTIER          shift and go to state 10
+    (               shift and go to state 8
+    -               shift and go to state 11
+
+    expr                           shift and go to state 12
+
+state 9
+
+    (5) ecrire -> ECRIRE ( expr . ) ;
+    (9) expr -> expr . / expr
+    (10) expr -> expr . - expr
+    (11) expr -> expr . * expr
+    (12) expr -> expr . + expr
+    )               shift and go to state 13
+    /               shift and go to state 14
+    -               shift and go to state 15
+    *               shift and go to state 16
+    +               shift and go to state 17
+
+
+state 10
+
+    (6) expr -> ENTIER .
+    )               reduce using rule 6 (expr -> ENTIER .)
+    /               reduce using rule 6 (expr -> ENTIER .)
+    -               reduce using rule 6 (expr -> ENTIER .)
+    *               reduce using rule 6 (expr -> ENTIER .)
+    +               reduce using rule 6 (expr -> ENTIER .)
+
+
+state 11
+
+    (8) expr -> - . expr
+    (6) expr -> . ENTIER
+    (7) expr -> . ( expr )
+    (8) expr -> . - expr
+    (9) expr -> . expr / expr
+    (10) expr -> . expr - expr
+    (11) expr -> . expr * expr
+    (12) expr -> . expr + expr
+    ENTIER          shift and go to state 10
+    (               shift and go to state 8
+    -               shift and go to state 11
+
+    expr                           shift and go to state 18
+
+state 12
+
+    (7) expr -> ( expr . )
+    (9) expr -> expr . / expr
+    (10) expr -> expr . - expr
+    (11) expr -> expr . * expr
+    (12) expr -> expr . + expr
+    )               shift and go to state 19
+    /               shift and go to state 14
+    -               shift and go to state 15
+    *               shift and go to state 16
+    +               shift and go to state 17
+
+
+state 13
+
+    (5) ecrire -> ECRIRE ( expr ) . ;
+    ;               shift and go to state 20
+
+
+state 14
+
+    (9) expr -> expr / . expr
+    (6) expr -> . ENTIER
+    (7) expr -> . ( expr )
+    (8) expr -> . - expr
+    (9) expr -> . expr / expr
+    (10) expr -> . expr - expr
+    (11) expr -> . expr * expr
+    (12) expr -> . expr + expr
+    ENTIER          shift and go to state 10
+    (               shift and go to state 8
+    -               shift and go to state 11
+
+    expr                           shift and go to state 21
+
+state 15
+
+    (10) expr -> expr - . expr
+    (6) expr -> . ENTIER
+    (7) expr -> . ( expr )
+    (8) expr -> . - expr
+    (9) expr -> . expr / expr
+    (10) expr -> . expr - expr
+    (11) expr -> . expr * expr
+    (12) expr -> . expr + expr
+    ENTIER          shift and go to state 10
+    (               shift and go to state 8
+    -               shift and go to state 11
+
+    expr                           shift and go to state 22
+
+state 16
+
+    (11) expr -> expr * . expr
+    (6) expr -> . ENTIER
+    (7) expr -> . ( expr )
+    (8) expr -> . - expr
+    (9) expr -> . expr / expr
+    (10) expr -> . expr - expr
+    (11) expr -> . expr * expr
+    (12) expr -> . expr + expr
+    ENTIER          shift and go to state 10
+    (               shift and go to state 8
+    -               shift and go to state 11
+
+    expr                           shift and go to state 23
+
+state 17
+
+    (12) expr -> expr + . expr
+    (6) expr -> . ENTIER
+    (7) expr -> . ( expr )
+    (8) expr -> . - expr
+    (9) expr -> . expr / expr
+    (10) expr -> . expr - expr
+    (11) expr -> . expr * expr
+    (12) expr -> . expr + expr
+    ENTIER          shift and go to state 10
+    (               shift and go to state 8
+    -               shift and go to state 11
+
+    expr                           shift and go to state 24
+
+state 18
+
+    (8) expr -> - expr .
+    (9) expr -> expr . / expr
+    (10) expr -> expr . - expr
+    (11) expr -> expr . * expr
+    (12) expr -> expr . + expr
+    )               reduce using rule 8 (expr -> - expr .)
+    /               reduce using rule 8 (expr -> - expr .)
+    -               reduce using rule 8 (expr -> - expr .)
+    *               reduce using rule 8 (expr -> - expr .)
+    +               reduce using rule 8 (expr -> - expr .)
+
+
+state 19
+
+    (7) expr -> ( expr ) .
+    )               reduce using rule 7 (expr -> ( expr ) .)
+    /               reduce using rule 7 (expr -> ( expr ) .)
+    -               reduce using rule 7 (expr -> ( expr ) .)
+    *               reduce using rule 7 (expr -> ( expr ) .)
+    +               reduce using rule 7 (expr -> ( expr ) .)
+
+
+state 20
+
+    (5) ecrire -> ECRIRE ( expr ) ; .
+    ECRIRE          reduce using rule 5 (ecrire -> ECRIRE ( expr ) ; .)
+    $end            reduce using rule 5 (ecrire -> ECRIRE ( expr ) ; .)
+
+
+state 21
+
+    (9) expr -> expr / expr .
+    (9) expr -> expr . / expr
+    (10) expr -> expr . - expr
+    (11) expr -> expr . * expr
+    (12) expr -> expr . + expr
+    )               reduce using rule 9 (expr -> expr / expr .)
+    /               reduce using rule 9 (expr -> expr / expr .)
+    -               reduce using rule 9 (expr -> expr / expr .)
+    *               reduce using rule 9 (expr -> expr / expr .)
+    +               reduce using rule 9 (expr -> expr / expr .)
+
+
+state 22
+
+    (10) expr -> expr - expr .
+    (9) expr -> expr . / expr
+    (10) expr -> expr . - expr
+    (11) expr -> expr . * expr
+    (12) expr -> expr . + expr
+    )               reduce using rule 10 (expr -> expr - expr .)
+    -               reduce using rule 10 (expr -> expr - expr .)
+    +               reduce using rule 10 (expr -> expr - expr .)
+    /               shift and go to state 14
+    *               shift and go to state 16
+
+
+state 23
+
+    (11) expr -> expr * expr .
+    (9) expr -> expr . / expr
+    (10) expr -> expr . - expr
+    (11) expr -> expr . * expr
+    (12) expr -> expr . + expr
+    )               reduce using rule 11 (expr -> expr * expr .)
+    /               reduce using rule 11 (expr -> expr * expr .)
+    -               reduce using rule 11 (expr -> expr * expr .)
+    *               reduce using rule 11 (expr -> expr * expr .)
+    +               reduce using rule 11 (expr -> expr * expr .)
+
+
+state 24
+
+    (12) expr -> expr + expr .
+    (9) expr -> expr . / expr
+    (10) expr -> expr . - expr
+    (11) expr -> expr . * expr
+    (12) expr -> expr . + expr
+    )               reduce using rule 12 (expr -> expr + expr .)
+    -               reduce using rule 12 (expr -> expr + expr .)
+    +               reduce using rule 12 (expr -> expr + expr .)
+    /               shift and go to state 14
+    *               shift and go to state 16
