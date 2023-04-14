@@ -1,2 +1,5 @@
 ecrire( 1 * 2 * 3 * 4 ) ;
 ecrire(-(7+3));
+ecrire( 2 + 3 *5 ) ;
+ecrire(2 + 3%5);
+lire();

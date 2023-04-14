@@ -8,16 +8,12 @@ class FloParser(Parser):
 	debugfile = 'parser.out'
 	# On récupère la liste des lexèmes de l'analyse lexicale
 	tokens = FloLexer.tokens
-
-	precedence = (
-            ('left', '+', '-'),
-            ('left', '*', '/'),
-            ('right', 'UMINUS'),
-        )
+	start="prog"
 
 	def __init__(self):
 		self.names = {}
-
+  
+	
 	# Règles gramaticales et actions associées
 	@_('listeInstructions')
 	def prog(self, p):
@@ -42,33 +38,45 @@ class FloParser(Parser):
 	def ecrire(self, p):
 		return arbre_abstrait.Ecrire(p.expr)  # p.expr = p[2]
 
-	@_('expr "+" expr')
-	def expr(self, p):
-		return arbre_abstrait.Operation('+', p[0], p[2])
+	@_('expr "+" produit')
+	def expr(self,p):
+		return arbre_abstrait.Operation('+',p[0],p[2])
 
-	@_('expr "*" expr')
-	def expr(self, p):
-		return arbre_abstrait.Operation('*', p[0], p[2])
+	@_('expr "-" produit')
+	def expr(self,p):
+		return arbre_abstrait.Operation('-',p[0],p[2])
 
-	@_('expr "-" expr')
-	def expr(self, p):
-		return arbre_abstrait.Operation('-', p[0], p[2])
+	@_('"-" facteur')
+	def facteur(self,p):
+		return arbre_abstrait.Operation('*', arbre_abstrait.Entier("-1"), p.facteur)
 
-	@_('expr "/" expr')
-	def expr(self, p):
-		return arbre_abstrait.Operation('/', p[0], p[2])
+	@_('produit "*" facteur')
+	def produit(self,p):
+		return arbre_abstrait.Operation('*',p[0],p[2])
 
-	@_('"-" expr %prec UMINUS')
+	@_('produit "/" facteur')
+	def produit(self,p):
+		return arbre_abstrait.Operation('/',p[0],p[2])
+
+	@_('produit "%" facteur')
+	def produit(self,p):
+		return arbre_abstrait.Operation('%',p[0],p[2])
+
+	@_('produit')
 	def expr(self, p):
-		return arbre_abstrait.Operation('*', arbre_abstrait.Entier("-1"), p.expr)
+		return p.produit
+
+	@_('facteur')
+	def produit(self, p):
+		return p.facteur
 
 	@_('"(" expr ")"')
-	def expr(self, p):
-		return p.expr  # ou p[1]
+	def facteur(self, p):
+		return p.expr
 
 	@_('ENTIER')
-	def expr(self, p):
-		return arbre_abstrait.Entier(p.ENTIER)  # p.ENTIER = p[0]
+	def facteur(self, p):
+		return arbre_abstrait.Entier(p.ENTIER) 
 
 
 if __name__ == '__main__':
