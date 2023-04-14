@@ -34,9 +34,17 @@ class FloParser(Parser):
 	def instruction(self, p):
 		return p[0]
 
+	@_('lire')
+	def instruction(self,p):
+		return p[0]
+
 	@_('ECRIRE "(" expr ")" ";"')
 	def ecrire(self, p):
 		return arbre_abstrait.Ecrire(p.expr)  # p.expr = p[2]
+
+	@_('LIRE "(" ")"')
+	def lire(self):
+		return arbre_abstrait.Lire()
 
 	@_('expr "+" produit')
 	def expr(self,p):
@@ -76,7 +84,15 @@ class FloParser(Parser):
 
 	@_('ENTIER')
 	def facteur(self, p):
-		return arbre_abstrait.Entier(p.ENTIER) 
+		return arbre_abstrait.Entier(p.ENTIER)
+
+	@_('variable')
+	def facteur(self, p):
+		return p.variable
+
+	@_('IDENTIFIANT')
+	def variable(self, p):
+		return arbre_abstrait.Variable(p.IDENTIFIANT)
 
 
 if __name__ == '__main__':

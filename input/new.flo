@@ -1,1 +1,1 @@
-ecrire( -(9+9));
+ecrire( -(9+a) * lire());

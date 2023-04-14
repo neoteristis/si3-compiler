@@ -28,6 +28,12 @@ class Ecrire:
 		afficher("<ecrire>",indent)
 		self.exp.afficher(indent+1)
 		afficher("</ecrire>",indent)
+  
+class Lire:
+	def __init__(self):
+		pass
+	def afficher(self, indent=0):
+		afficher("[Lire]", indent)
 		
 class Operation:
 	def __init__(self,op,exp1,exp2):
@@ -45,3 +51,9 @@ class Entier:
 		self.valeur = valeur
 	def afficher(self,indent=0):
 		afficher("[Entier:"+str(self.valeur)+"]",indent)
+  
+class Variable:
+    def __init__(self, name):
+        self.name=name
+    def afficher(self,indent=0):
+        afficher("[Variable:"+self.name+"]", indent)
