@@ -1,0 +1,9 @@
+entier get(){
+    entier a=89;
+    a=78*a;
+    si(a==78){
+        a=89;
+    }
+
+    retourner a*98 + 9;
+}

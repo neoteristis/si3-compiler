@@ -1,0 +1,3 @@
+entier get(entier a, entier b){
+    retourner 0;
+}
