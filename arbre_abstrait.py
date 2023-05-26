@@ -63,14 +63,6 @@ class Ecrire:
 		afficher("<ecrire>",indent)
 		self.exp.afficher(indent+1)
 		afficher("</ecrire>",indent)
-
-class UnaryOperator:
-	def __init__(self, op):
-		self.op=op
-	def afficher(self,indent=0):
-		afficher("<unary_operator>",indent)
-		afficher(self.op,indent+1)
-		afficher("</unary_operator>",indent)
   
 class NoneOperation:
 	def __init__(self):
@@ -98,7 +90,9 @@ class LoopOperation:
 		self.statement=statement
 	def afficher(self, indent=0):
 		afficher("<loop_operation>",indent)
-		self.expr.afficher(indent+1)
+		afficher("<condition>",indent+1)
+		self.expr.afficher(indent+2)
+		afficher("</condition>",indent+1)
 		self.statement.afficher(indent+1)
 		afficher("</loop_operation>",indent)        
 
@@ -146,6 +140,18 @@ class FunctionOperation:
         afficher("[Name:"+self.name+"]",indent+1)
         self.listeParameters.afficher(indent+1)
         afficher("</function_operation>", indent)
+        
+class UnaryOperator:
+	def __init__(self, op, hidden=NoneOperation()):
+		self.op=op
+		self.hidden=hidden
+	def afficher(self,indent=0):
+		afficher("<unary_operator>",indent)
+		afficher("[Operator:"+str(self.op)+"]",indent+1)
+		self.hidden.afficher(indent+1)
+		afficher("</unary_operator>",indent)
+
+        
 
 class Entier:
 	def __init__(self,valeur):
