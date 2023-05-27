@@ -2,17 +2,47 @@ import arbre_abstrait
 
 VAR=100
 FUNCTION=101
+INT="int"
+BOOL="bool"
+OPERATION="operation"
 
 class BorrowChecker:
     def __init__(self, tree):
         self.tree=tree
+        self.forbbiden_op = {
+            "int" : ["=", "and", "or", "!"],
+            "bool" : ["=", "+", "-" , "*", "/", "%", ">", "<", ">=", "<=", "=="],
+            "operation" : ["="]
+        }
+        self.return_op = {
+            "=" : None,
+            "+" : "entier",
+            "-" : "entier",
+            "/" : "entier",
+            "*" : "entier",
+            "%" : "entier",
+            "and" : "booleen",
+            "or" : "booleen",
+            ">" : "booleen",
+            "<" : "booleen",
+            ">=" : "booleen",
+            "<=" : "booleen",
+            "!" : "booleen",
+            "==" : "booleen"
+        }
     def check(self):
-        self.checkListInstructions([],[],self.tree.listeInstructions.instructions)
+        try:
+            self.checkListInstructions([],[],self.tree.listeInstructions.instructions)
+        except Exception as e:
+            print("Error: " + str(e))
+            return False
+        return True
     def checkListInstructions(self, context_parent, context, instructions):
         context.extend(context_parent)
         for instruction in instructions:
             if arbre_abstrait.DeclareOperation == type(instruction):
                 print("Declare:" + instruction.name)
+                expr=instruction.expr
                 context.append([VAR,instruction.name,instruction.type])
             elif arbre_abstrait.LoopOperation == type(instruction):
                 expr=instruction.expr
@@ -46,8 +76,74 @@ class BorrowChecker:
             if not self.checkContext(context_parent, VAR, expr1.name, None):
                 raise Exception(expr1.name +" not found in the scope")
             if type(expr2)==arbre_abstrait.Variable:
+                if not self.checkContext(context_parent, VAR, expr2.name, None):
+                    raise Exception(expr2.name +" not found in the scope")
                 if not self.checkMatchVariable(context_parent,expr1.name,expr2.name):
-                    raise Exception(expr1.name +" incompatible type with " + expr2.name)
+                    raise Exception(expr1.name +" is incompatible type with " + expr2.name)
+            elif type(expr2)==arbre_abstrait.Entier:
+                if self.getTypeOfVar(context_parent,expr1.name)!="entier":
+                    raise Exception(expr1.name +" is incompatible type with " + str(expr2.valeur))
+            elif type(expr2)==arbre_abstrait.Boolean:
+                if self.getTypeOfVar(context_parent,expr1.name)!="booleen":
+                    raise Exception(expr1.name +" is incompatible type with " + str(expr2.valeur))
+            else:
+                typeE=self.checkExpression(context_parent, expr2)
+                if self.getTypeOfVar(context_parent,expr1.name)!=typeE:
+                    raise Exception(expr1.name + " is incompatible with type of right expression")
+        elif type(expr1)==arbre_abstrait.Entier:
+            if not self.checkOp(INT, op):
+                raise Exception("Forbidden operation between a number and a expression")
+            if type(expr2)==arbre_abstrait.Variable:
+                if not self.checkContext(context_parent, VAR, expr2.name, None):
+                    raise Exception(expr2.name +" not found in the scope")
+                if self.getTypeOfVar(context_parent, expr2.name)!="entier":
+                    raise Exception(str(expr1.valeur) + " is incompatible with variable " + expr2.name)
+            elif type(expr2)==arbre_abstrait.Entier:
+                pass
+            elif type(expr2)==arbre_abstrait.Boolean:
+                raise Exception(str(expr1.valeur) +" incompatible type with " + str(expr2.valeur))
+            else:
+                typeE=self.checkExpression(context_parent, expr2)
+                if "entier"!=typeE:
+                    raise Exception(str(expr1.valeur) + " is incompatible with type of right expression")
+        elif type(expr1)==arbre_abstrait.Boolean:
+            if not self.checkOp(BOOL, op):
+                raise Exception("Forbidden operation between a number and a expression")
+            if type(expr2)==arbre_abstrait.Variable:
+                if not self.checkContext(context_parent, VAR, expr2.name, None):
+                    raise Exception(expr2.name +" not found in the scope")
+                if self.getTypeOfVar(context_parent, expr2.name)!="booleen":
+                    raise Exception(str(expr1.valeur) + " is incompatible with variable " + expr2.name)
+            elif type(expr2)==arbre_abstrait.Entier:
+                raise Exception(str(expr1.valeur) +" incompatible type with " + str(expr2.valeur))
+            elif type(expr2)==arbre_abstrait.Boolean:
+                pass
+            else:
+                typeE=self.checkExpression(context_parent, expr2)
+                if "booleen"!=typeE:
+                    raise Exception(str(expr1.valeur) + " is incompatible with type of right expression")
+        elif type(expr1)==arbre_abstrait.Operation:
+            # TODO finish check type
+            if not self.checkOp(OPERATION, op):
+                raise Exception("Forbidden operation between a number and a expression")
+            typeE=self.checkExpression(context_parent, expr1)
+            if type(expr2)==arbre_abstrait.Variable:
+                if not self.checkContext(context_parent, VAR, expr2.name, None):
+                    raise Exception(expr2.name +" not found in the scope")
+                if self.getTypeOfVar(context_parent,expr2.name)!=typeE:
+                    raise Exception(str(expr2.name)+ " is incompatible with type of left expression")
+            elif type(expr2)==arbre_abstrait.Entier:
+                if typeE != "entier":
+                    raise Exception(str(expr2.valeur)+ " is incompatible with type of left expression")
+            elif type(expr2)==arbre_abstrait.Boolean:
+                if typeE != "booleen":
+                    raise Exception(str(expr2.valeur) + " is incompatible with type of left expression")
+            else:
+                typeE2 = self.checkExpression(context_parent, expr2)
+                if typeE != typeE2:
+                    raise Exception("Two expressions are incompatible with type of left expression")
+        return self.getTypeReturnOp(op)
+            
     def checkContext(self, context, type, name ,rtype):
         for item in context:
             if item[0] == type and item[1] == name:# and context[2] == rtype:
@@ -63,3 +159,14 @@ class BorrowChecker:
                 if var1[2] != item[2]:
                     return False
         return True
+    def getTypeOfVar(self, context, name):
+        for item in context:
+            if item[0] == VAR and item[1] == name:
+                return item[2]
+        return None
+    def checkOp(self, type, op):
+        if op in self.forbbiden_op[type]:
+            return False
+        return True
+    def getTypeReturnOp(self, op):
+        return self.return_op[op]

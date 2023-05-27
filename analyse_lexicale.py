@@ -35,7 +35,10 @@ class FloLexer(Lexer):
 
 	@_(r'Vrai|Faux')
 	def BOOLEAN(self, t):
-		t.value = bool(t.value)
+		if t.value=="Vrai":
+			t.value=True
+		else:
+			t.value=False
 		return t
 
     	# cas général
@@ -49,7 +52,7 @@ class FloLexer(Lexer):
 	IDENTIFIANT['tantque'] = TANTQUE
 	IDENTIFIANT['retourner'] = RETOURNER
 	IDENTIFIANT['entier'] = INT
-	IDENTIFIANT['boolean'] = BOOL
+	IDENTIFIANT['booleen'] = BOOL
 	#Syntaxe des commentaires à ignorer
 	ignore_comment = r'\#.*'
 

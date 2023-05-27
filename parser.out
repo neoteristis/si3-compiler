@@ -74,8 +74,8 @@ Rule 70    jump_statement -> RETOURNER ;
 
 Unused terminals:
 
-    LIRE
     ECRIRE
+    LIRE
 
 Terminals, with rules where they appear:
 

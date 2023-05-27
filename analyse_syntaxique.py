@@ -388,7 +388,10 @@ if __name__ == '__main__':
 					print("There are some errors")
 				else:
 					borrowChecher=borrow_checker.BorrowChecker(arbre)
-					borrowChecher.check()
-					arbre.afficher()
+					if borrowChecher.check():
+						pass
+						#arbre.afficher()
+					else:
+						print("Error detected !")
 			except EOFError:
 			    exit()
