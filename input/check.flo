@@ -1,4 +1,1 @@
-booleen a = Faux;
-entier b = 9;
-a=(Vrai ou Faux) > Faux;
-#a= Vrai ou (Faux et 9>8 ou ((Vrai et Faux) > Vrai));
+entier a = 5*Vrai;

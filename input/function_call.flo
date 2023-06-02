@@ -1,1 +1,7 @@
-entier n = get(a,b);
+entier get(entier a, booleen b){
+    retourner 0;
+}
+
+entier i=5;
+booleen j=Faux;
+entier n = get(i*5,lire());

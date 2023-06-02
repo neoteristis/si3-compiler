@@ -72,11 +72,6 @@ Rule 68    iteration_statement -> TANTQUE ( expression ) statement
 Rule 69    jump_statement -> RETOURNER expression ;
 Rule 70    jump_statement -> RETOURNER ;
 
-Unused terminals:
-
-    ECRIRE
-    LIRE
-
 Terminals, with rules where they appear:
 
 %                    : 13
@@ -94,14 +89,12 @@ AFFECT               : 35 48
 BOOL                 : 54
 BOOLEAN              : 4
 DIFFERENT            : 25
-ECRIRE               : 
 ENTIER               : 3
 EQUAL                : 26
 ET                   : 28
 IDENTIFIANT          : 5 48 49 50 51 52 53
 INFERIEUR_OU_EGAL    : 21
 INT                  : 55
-LIRE                 : 
 NON                  : 10
 OU                   : 30
 RETOURNER            : 69 70
