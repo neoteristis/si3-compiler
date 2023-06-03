@@ -71,11 +71,6 @@ class FloParser(Parser):
 		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
 		return arbre_abstrait.UnaryOperator("*",arbre_abstrait.Entier(-1))
 
-	@_("NON")
-	def unary_operator(self, p):
-		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
-		return arbre_abstrait.UnaryOperator("!")
-
 	@_('unary_expression')
 	def cast_expression(self, p):
 		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
@@ -177,9 +172,24 @@ class FloParser(Parser):
 		return arbre_abstrait.Operation("or", p.logical_or_expression, p.logical_and_expression)
 
 	@_("logical_or_expression")
-	def conditional_expression(self, p):
+	def logical_not_expression(self,p):
 		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
 		return p.logical_or_expression
+
+	@_("NON logical_or_expression")
+	def logical_not_expression(self,p):
+		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
+		return arbre_abstrait.Operation("not", arbre_abstrait.NoneOperation(), p.logical_or_expression)
+
+	@_("logical_or_expression NON logical_or_expression")
+	def logical_not_expression(self,p):
+		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
+		return arbre_abstrait.Operation("not", p[0], p[1])
+
+	@_("logical_not_expression")
+	def conditional_expression(self, p):
+		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
+		return p.logical_not_expression
 
 	@_("primary_expression assignment_operator conditional_expression")
 	def assignment_expression(self, p):

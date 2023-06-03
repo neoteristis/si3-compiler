@@ -28,7 +28,7 @@ class BorrowChecker:
     def __init__(self, tree):
         self.tree=tree
         self.forbbiden_op = {
-            "entier" : ["=", "and", "or", "!"],
+            "entier" : ["=", "and", "or", "not"],
             "booleen" : ["=", "+", "-" , "*", "/", "%", ">", "<", ">=", "<="],
             "operation" : ["="]
         }
@@ -47,7 +47,8 @@ class BorrowChecker:
             "<=" : "booleen",
             "!" : "booleen",
             "==" : "booleen",
-            '!=' : "booleen"
+            '!=' : "booleen",
+            'not' : "booleen"
         }
         self.compatible_op = {
             "=" : ["entier", "booleen"],
@@ -62,7 +63,7 @@ class BorrowChecker:
             "<" : ["entier"],
             ">=" : ["entier"],
             "<=" : ["entier"],
-            "!" : ["booleen"],
+            "not" : ["booleen"],
             "==" : ["entier", "booleen"],
             "!=" : ["entier", "booleen"]
         }
@@ -81,8 +82,9 @@ class BorrowChecker:
             if arbre_abstrait.DeclareOperation == type(instruction):
                 expr=instruction.expr
                 typeExpr=self.checkExpression(context, expr)
-                if typeExpr!=instruction.type:
-                    raise Exception("Bad type expression for " + instruction.name)
+                if type(expr)!=arbre_abstrait.NoneOperation:
+                    if typeExpr!=instruction.type:
+                        raise Exception("Bad type expression for " + instruction.name + " Find : " + str(typeExpr))
                 context.addVariables(instruction.name,instruction.type)
             elif arbre_abstrait.LoopOperation == type(instruction):
                 expr=instruction.expr
