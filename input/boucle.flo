@@ -1,3 +1,4 @@
+entier a=9;
 tantque(a==9){
     9*9+6;
 }

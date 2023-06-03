@@ -1,1 +1,3 @@
-booleen a = non Vrai;
+booleen a;
+
+a = non (9 > 2);

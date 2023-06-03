@@ -380,17 +380,28 @@ if __name__ == '__main__':
 	if len(sys.argv) < 2:
 		print("usage: python3 analyse_syntaxique.py NOM_FICHIER_SOURCE.flo")
 	else:
+		verbose=True
+		if len(sys.argv)>2:
+			if sys.argv[2]=="-v":
+				verbose=False
 		with open(sys.argv[1], "r") as f:
 			data = f.read()
 			try:
 				arbre = parser.parse(lexer.tokenize(data))
 				if arbre == None:
-					print("There are some errors")
+					if verbose:
+						print("There are some errors")
+					exit(1)
 				else:
 					borrowChecher=borrow_checker.BorrowChecker(arbre)
 					if borrowChecher.check():
-						arbre.afficher()
+						if verbose:
+							arbre.afficher()
+						exit(0)
 					else:
-						print("Error detected !")
+						if verbose:
+							arbre.afficher()
+							print("Error detected !")
+						exit(1)
 			except EOFError:
 			    exit()
