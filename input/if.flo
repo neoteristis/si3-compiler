@@ -1,3 +1,6 @@
+entier a=9;
+entier marion=7;
+
 si(a==9){
     8*9;
 }sinon si(marion==9){

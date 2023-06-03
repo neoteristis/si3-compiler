@@ -17,6 +17,7 @@ class FloParser(Parser):
 	# On récupère la liste des lexèmes de l'analyse lexicale
 	tokens = FloLexer.tokens 
 	start="prog"
+	errorFlag=False
 
 	def __init__(self):
 		pass
@@ -65,6 +66,20 @@ class FloParser(Parser):
 	def unary_expression(self, p):
 		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
 		return arbre_abstrait.Operation(p[0].op,p[0].hidden,p[1])
+
+	@_('NON BOOLEAN ET conditional_expression')
+	@_('NON BOOLEAN OU conditional_expression')
+	@_('NON BOOLEAN EQUAL conditional_expression')
+	@_('NON BOOLEAN DIFFERENT conditional_expression')
+	def unary_expression(self, p):
+		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
+		op1 = arbre_abstrait.Operation("non",arbre_abstrait.Boolean(p.BOOLEAN),arbre_abstrait.NoneOperation())
+		return arbre_abstrait.Operation(p[2],op1, p.conditional_expression)
+
+	@_('NON conditional_expression')
+	def unary_expression(self, p):
+		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
+		return arbre_abstrait.Operation("non",p.conditional_expression,arbre_abstrait.NoneOperation())
 
 	@_("'-'")
 	def unary_operator(self, p):
@@ -159,7 +174,7 @@ class FloParser(Parser):
 	@_("logical_and_expression ET equality_expression")
 	def logical_and_expression(self,p):
 		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
-		return arbre_abstrait.Operation("and", p.logical_and_expression, p.equality_expression)
+		return arbre_abstrait.Operation("et", p.logical_and_expression, p.equality_expression)
 
 	@_("logical_and_expression")
 	def logical_or_expression(self,p):
@@ -169,27 +184,12 @@ class FloParser(Parser):
 	@_("logical_or_expression OU logical_and_expression")
 	def logical_or_expression(self,p):
 		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
-		return arbre_abstrait.Operation("or", p.logical_or_expression, p.logical_and_expression)
+		return arbre_abstrait.Operation("ou", p.logical_or_expression, p.logical_and_expression)
 
 	@_("logical_or_expression")
-	def logical_not_expression(self,p):
-		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
-		return p.logical_or_expression
-
-	@_("NON logical_or_expression")
-	def logical_not_expression(self,p):
-		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
-		return arbre_abstrait.Operation("not", arbre_abstrait.NoneOperation(), p.logical_or_expression)
-
-	@_("logical_or_expression NON logical_or_expression")
-	def logical_not_expression(self,p):
-		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
-		return arbre_abstrait.Operation("not", p[0], p[1])
-
-	@_("logical_not_expression")
 	def conditional_expression(self, p):
 		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
-		return p.logical_not_expression
+		return p.logical_or_expression
 
 	@_("primary_expression assignment_operator conditional_expression")
 	def assignment_expression(self, p):
@@ -384,6 +384,9 @@ class FloParser(Parser):
 		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
 		return arbre_abstrait.ReturnOperation(p.expression)
 
+	def error(self,p):
+		self.errorFlag=True
+
 if __name__ == '__main__':
 	lexer = FloLexer()
 	parser = FloParser()
@@ -398,7 +401,7 @@ if __name__ == '__main__':
 			data = f.read()
 			try:
 				arbre = parser.parse(lexer.tokenize(data))
-				if arbre == None:
+				if arbre == None or parser.errorFlag:
 					if verbose:
 						print("There are some errors")
 					exit(1)
@@ -410,7 +413,6 @@ if __name__ == '__main__':
 						exit(0)
 					else:
 						if verbose:
-							arbre.afficher()
 							print("Error detected !")
 						exit(1)
 			except EOFError:

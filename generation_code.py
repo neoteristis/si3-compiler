@@ -2,6 +2,7 @@ import sys
 from analyse_lexicale import FloLexer
 from analyse_syntaxique import FloParser
 import arbre_abstrait
+import borrow_checker
 
 num_etiquette_courante = -1 #Permet de donner des noms différents à toutes les étiquettes (en les appelant e0, e1,e2,...)
 
@@ -99,7 +100,7 @@ def gen_expression(expression):
 	if type(expression) == arbre_abstrait.Operation:
 		gen_operation(expression) #on calcule et empile la valeur de l'opération
 	elif type(expression) == arbre_abstrait.Entier:
-      		nasm_instruction("push", str(expression.valeur), "", "", "") ; #on met sur la pile la valeur entière			
+		nasm_instruction("push", str(expression.valeur), "", "", "") ; #on met sur la pile la valeur entière			
 	else:
 		print("type d'expression inconnu",type(expression))
 		exit(0)
@@ -137,10 +138,25 @@ if __name__ == "__main__":
 		afficher_nasm = True
 	else:
 		afficher_tableSymboles = True
+	verbose=True
 	with open(sys.argv[2],"r") as f:
 		data = f.read()
 		try:
 			arbre = parser.parse(lexer.tokenize(data))
+			if arbre == None or parser.errorFlag:
+				if verbose:
+					print("There are some errors")
+					exit(1)
+				else:
+					borrowChecher=borrow_checker.BorrowChecker(arbre)
+					if borrowChecher.check():
+						if verbose:
+							arbre.afficher()
+						exit(0)
+					else:
+						if verbose:
+							print("Error detected !")
+						exit(1)
 			gen_programme(arbre)
 		except EOFError:
 			exit()

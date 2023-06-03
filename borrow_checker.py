@@ -4,6 +4,7 @@ VAR=100
 FUNCTION=101
 INT="entier"
 BOOL="booleen"
+MULTI="multi"
 VOID=None
 OPERATION="operation"
 
@@ -28,7 +29,7 @@ class BorrowChecker:
     def __init__(self, tree):
         self.tree=tree
         self.forbbiden_op = {
-            "entier" : ["=", "and", "or", "not"],
+            "entier" : ["=", "et", "ou", "non"],
             "booleen" : ["=", "+", "-" , "*", "/", "%", ">", "<", ">=", "<="],
             "operation" : ["="]
         }
@@ -39,8 +40,8 @@ class BorrowChecker:
             "/" : "entier",
             "*" : "entier",
             "%" : "entier",
-            "and" : "booleen",
-            "or" : "booleen",
+            "et" : "booleen",
+            "ou" : "booleen",
             ">" : "booleen",
             "<" : "booleen",
             ">=" : "booleen",
@@ -48,7 +49,7 @@ class BorrowChecker:
             "!" : "booleen",
             "==" : "booleen",
             '!=' : "booleen",
-            'not' : "booleen"
+            'non' : "booleen"
         }
         self.compatible_op = {
             "=" : ["entier", "booleen"],
@@ -57,13 +58,13 @@ class BorrowChecker:
             "/" : ["entier"],
             "*" : ["entier"],
             "%" : ["entier"],
-            "and" : ["booleen"],
-            "or" : ["booleen"],
+            "et" : ["booleen"],
+            "ou" : ["booleen"],
             ">" : ["entier"],
             "<" : ["entier"],
             ">=" : ["entier"],
             "<=" : ["entier"],
-            "not" : ["booleen"],
+            "non" : ["booleen"],
             "==" : ["entier", "booleen"],
             "!=" : ["entier", "booleen"]
         }
@@ -71,11 +72,18 @@ class BorrowChecker:
         try:
             context_parent = self.installStandardLib()
             context_parent.setCurrentFunction("main", VOID)
+            context_parent.extend(self.preparseFunction(self.tree.listeInstructions.instructions))
             self.checkListInstructions(context_parent,Context(),self.tree.listeInstructions.instructions)
         except Exception as e:
             print("Error: " + str(e))
             return False
         return True
+    def preparseFunction(self, instructions):
+        context=Context()
+        for instruction in instructions:
+            if arbre_abstrait.Function == type(instruction):
+                context.addFunction(instruction.name,instruction.args,instruction.return_type)
+        return context
     def checkListInstructions(self, context_parent, context, instructions):
         context.extend(context_parent)
         for instruction in instructions:
@@ -83,19 +91,27 @@ class BorrowChecker:
                 expr=instruction.expr
                 typeExpr=self.checkExpression(context, expr)
                 if type(expr)!=arbre_abstrait.NoneOperation:
-                    if typeExpr!=instruction.type:
+                    if not self.checkType(typeExpr,instruction.type):
                         raise Exception("Bad type expression for " + instruction.name + " Find : " + str(typeExpr))
                 context.addVariables(instruction.name,instruction.type)
+            elif arbre_abstrait.Function == type(instruction):
+                args=instruction.args.declarations
+                sub_context=Context()
+                for arg in args:
+                    sub_context.addVariables(arg.name,arg.type)
+                sub_context.setCurrentFunction(instruction.name, instruction.return_type)
+                if type(instruction.instructions) != arbre_abstrait.NoneOperation:
+                    self.checkListInstructions(context,sub_context,instruction.instructions.instructions)
             elif arbre_abstrait.LoopOperation == type(instruction):
                 expr=instruction.expr
-                if self.checkExpression(context, expr) != BOOL:
+                if not self.checkType(self.checkExpression(context, expr), BOOL):
                     raise Exception("Loop condition must be a bool expression")
                 self.checkListInstructions(context,Context(),instruction.statement.instructions)
             elif arbre_abstrait.ConditionalOperation == type(instruction):
                 expr=instruction.expr
                 statement1=instruction.statement
                 statement2=instruction.statement2
-                if self.checkExpression(context, expr) != BOOL:
+                if not self.checkType(self.checkExpression(context, expr),BOOL):
                     raise Exception("If condition must be a bool expression")
                 if statement1!=None and type(statement1)!=arbre_abstrait.NoneOperation:
                     self.checkListInstructions(context,Context(),statement1.instructions)
@@ -104,15 +120,6 @@ class BorrowChecker:
                         self.checkListInstructions(context,Context(),[statement2])
                     else:
                         self.checkListInstructions(context,Context(),statement2.instructions)
-            elif arbre_abstrait.Function == type(instruction):
-                args=instruction.args.declarations
-                sub_context=Context()
-                for arg in args:
-                    sub_context.addVariables(arg.name,arg.type)
-                sub_context.setCurrentFunction(instruction.name, instruction.return_type)
-                context.addFunction(instruction.name,instruction.args,instruction.return_type)
-                if type(instruction.instructions) != arbre_abstrait.NoneOperation:
-                    self.checkListInstructions(context,sub_context,instruction.instructions.instructions)
             elif arbre_abstrait.Operation == type(instruction):
                 self.checkExpression(context, instruction)
             elif arbre_abstrait.FunctionOperation == type(instruction):
@@ -121,7 +128,7 @@ class BorrowChecker:
                 if context.current_function[0]=="main":
                     raise Exception("None of return operation allowed here")
                 typeR=self.checkExpression(context, instruction.expr)
-                if typeR!=context.current_function[1]:
+                if not self.checkType(typeR,context.current_function[1]):
                     raise Exception("Bad return type !")
     def checkExpression(self, context_parent, expr):
         if type(expr) == arbre_abstrait.Operation:
@@ -149,14 +156,14 @@ class BorrowChecker:
                 if not self.checkMatchVariable(context_parent,expr1.name,expr2.name):
                     raise Exception(expr1.name +" is incompatible type with " + expr2.name)
             elif type(expr2)==arbre_abstrait.Entier:
-                if self.getTypeOfVar(context_parent,expr1.name)!=INT:
+                if not self.checkType(self.getTypeOfVar(context_parent,expr1.name),INT):
                     raise Exception(expr1.name +" is incompatible type with " + str(expr2.valeur))
             elif type(expr2)==arbre_abstrait.Boolean:
-                if self.getTypeOfVar(context_parent,expr1.name)!=BOOL:
+                if not self.checkType(self.getTypeOfVar(context_parent,expr1.name),BOOL):
                     raise Exception(expr1.name +" is incompatible type with " + str(expr2.valeur))
             else:
                 typeE=self.checkExpression(context_parent, expr2)
-                if self.getTypeOfVar(context_parent,expr1.name)!=typeE:
+                if not self.checkType(self.getTypeOfVar(context_parent,expr1.name),typeE):
                     raise Exception(expr1.name + " is incompatible with type of right expression")
         elif type(expr1)==arbre_abstrait.Entier:
             if not self.checkOp(INT, op):
@@ -164,7 +171,7 @@ class BorrowChecker:
             if type(expr2)==arbre_abstrait.Variable:
                 if not self.checkContext(context_parent, VAR, expr2.name, None):
                     raise Exception(expr2.name +" not found in the scope")
-                if self.getTypeOfVar(context_parent, expr2.name)!=INT:
+                if not self.checkType(self.getTypeOfVar(context_parent, expr2.name),INT):
                     raise Exception(str(expr1.valeur) + " is incompatible with variable " + expr2.name)
             elif type(expr2)==arbre_abstrait.Entier:
                 pass
@@ -172,7 +179,7 @@ class BorrowChecker:
                 raise Exception(str(expr1.valeur) +" incompatible type with " + str(expr2.valeur))
             else:
                 typeE=self.checkExpression(context_parent, expr2)
-                if INT!=typeE:
+                if not self.checkType(INT,typeE):
                     raise Exception(str(expr1.valeur) + " is incompatible with type of right expression")
         elif type(expr1)==arbre_abstrait.Boolean:
             if not self.checkOp(BOOL, op):
@@ -180,7 +187,7 @@ class BorrowChecker:
             if type(expr2)==arbre_abstrait.Variable:
                 if not self.checkContext(context_parent, VAR, expr2.name, None):
                     raise Exception(expr2.name +" not found in the scope")
-                if self.getTypeOfVar(context_parent, expr2.name)!=BOOL:
+                if not self.checkType(self.getTypeOfVar(context_parent, expr2.name),BOOL):
                     raise Exception(str(expr1.valeur) + " is incompatible with variable " + expr2.name)
             elif type(expr2)==arbre_abstrait.Entier:
                 raise Exception(str(expr1.valeur) +" incompatible type with " + str(expr2.valeur))
@@ -188,8 +195,12 @@ class BorrowChecker:
                 pass
             else:
                 typeE=self.checkExpression(context_parent, expr2)
-                if BOOL!=typeE:
-                    raise Exception(str(expr1.valeur) + " is incompatible with type of right expression")
+                if op=="non":
+                    if typeE!=None:
+                       raise Exception(str(expr1.valeur) + " is incompatible with type of right expression") 
+                else:
+                    if not self.checkType(BOOL,typeE):
+                        raise Exception(str(expr1.valeur) + " is incompatible with type of right expression")
         elif type(expr1)==arbre_abstrait.Operation:
             if not self.checkOp(OPERATION, op):
                 raise Exception("Forbidden operation between two expression")
@@ -199,18 +210,24 @@ class BorrowChecker:
             if type(expr2)==arbre_abstrait.Variable:
                 if not self.checkContext(context_parent, VAR, expr2.name, None):
                     raise Exception(expr2.name +" not found in the scope")
-                if self.getTypeOfVar(context_parent,expr2.name)!=typeE:
+                if not self.checkType(self.getTypeOfVar(context_parent,expr2.name),typeE):
                     raise Exception(str(expr2.name)+ " is incompatible with type of left expression")
             elif type(expr2)==arbre_abstrait.Entier:
-                if typeE != INT:
+                if not self.checkType(typeE ,INT):
                     raise Exception(str(expr2.valeur)+ " is incompatible with type of left expression")
             elif type(expr2)==arbre_abstrait.Boolean:
-                if typeE != BOOL:
+                if not self.checkType(typeE , BOOL):
                     raise Exception(str(expr2.valeur) + " is incompatible with type of left expression")
             else:
                 typeE2 = self.checkExpression(context_parent, expr2)
-                if typeE != typeE2:
-                    raise Exception("Two expressions are incompatible with type of left expression")
+                if op=="non":
+                    if self.checkType(typeE,BOOL) and self.checkType(typeE2,None):
+                        return self.getTypeReturnOp(op)
+                    else:
+                        raise Exception("Two expressions are incompatible with type of left expression")
+                else:
+                    if not self.checkType(typeE,typeE2):
+                        raise Exception("Two expressions are incompatible with type of left expression")
         return self.getTypeReturnOp(op)
     
     def checkFunction(self, context_parent, expr):
@@ -274,15 +291,21 @@ class BorrowChecker:
             find=False
             for p2 in params.declarations:
                 typeVar=self.checkExpression(context, p)
-                if typeVar == p2.type:
+                if self.checkType(typeVar,p2.type):
                     find=True
             if not find:
                 return False
         return True
+    def checkType(self, type1, type2):
+        if type1 == MULTI or type2 == MULTI:
+            return True
+        if type1==type2:
+            return True
+        return False
     def installStandardLib(self):
         context=Context()
         context.addFunction("lire", arbre_abstrait.ListeDeclarations(), INT)
         ecrire_parameter=arbre_abstrait.ListeDeclarations()
-        ecrire_parameter.declarations.append(arbre_abstrait.DeclareOperation(INT, "msg"))
+        ecrire_parameter.declarations.append(arbre_abstrait.DeclareOperation(MULTI, "msg"))
         context.addFunction("ecrire", ecrire_parameter, VOID)
         return context
