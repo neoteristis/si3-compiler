@@ -24,9 +24,15 @@ class Context:
         self.functions.extend(context.functions)
         if self.current_function==[]:
             self.current_function=context.current_function
+    def __repr__(self):
+        buf = ""
+        for i in self.variables:
+            buf = buf + "VAR / " + i[0] + " / " + i[1] + "\n"
+        return buf
 
 class BorrowChecker:
     def __init__(self, tree):
+        self.symbolTable={}
         self.tree=tree
         self.forbbiden_op = {
             "entier" : ["=", "et", "ou", "non"],
@@ -73,7 +79,8 @@ class BorrowChecker:
             context_parent = self.installStandardLib()
             context_parent.setCurrentFunction("main", VOID)
             context_parent.extend(self.preparseFunction(self.tree.listeInstructions.instructions))
-            self.checkListInstructions(context_parent,Context(),self.tree.listeInstructions.instructions)
+            self.symbolTable["main"] = Context()
+            self.checkListInstructions(context_parent,self.symbolTable["main"],self.tree.listeInstructions.instructions)
         except Exception as e:
             print("Error: " + str(e))
             return False
@@ -96,12 +103,12 @@ class BorrowChecker:
                 context.addVariables(instruction.name,instruction.type)
             elif arbre_abstrait.Function == type(instruction):
                 args=instruction.args.declarations
-                sub_context=Context()
+                self.symbolTable[instruction.name]=Context()
                 for arg in args:
-                    sub_context.addVariables(arg.name,arg.type)
-                sub_context.setCurrentFunction(instruction.name, instruction.return_type)
+                    self.symbolTable[instruction.name].addVariables(arg.name,arg.type)
+                self.symbolTable[instruction.name].setCurrentFunction(instruction.name, instruction.return_type)
                 if type(instruction.instructions) != arbre_abstrait.NoneOperation:
-                    self.checkListInstructions(context,sub_context,instruction.instructions.instructions)
+                    self.checkListInstructions(context,self.symbolTable[instruction.name],instruction.instructions.instructions)
             elif arbre_abstrait.LoopOperation == type(instruction):
                 expr=instruction.expr
                 if not self.checkType(self.checkExpression(context, expr), BOOL):

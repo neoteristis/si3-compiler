@@ -66,8 +66,8 @@ def gen_programme(programme):
 	printifm('_start:')
 	gen_listeInstructions(programme.listeInstructions)
 	nasm_instruction("mov", "eax", "1", "", "1 est le code de SYS_EXIT") 
+	nasm_instruction("mov", "ebx", "0", "", "0 équivalent à exit(0)")
 	nasm_instruction("int", "0x80", "", "", "exit") 
-	
 """
 Affiche le code nasm correspondant à une suite d'instructions
 """
@@ -79,8 +79,9 @@ def gen_listeInstructions(listeInstructions):
 Affiche le code nasm correspondant à une instruction
 """
 def gen_instruction(instruction):
-	if type(instruction) == arbre_abstrait.Ecrire:
-		gen_ecrire(instruction)
+	if type(instruction) == arbre_abstrait.FunctionOperation:
+		if instruction.name=="ecrire":
+			gen_ecrire(arbre_abstrait.Ecrire(instruction.listeParameters.parameters[0]))
 	else:
 		print("type instruction inconnu",type(instruction))
 		exit(0)
@@ -118,11 +119,11 @@ def gen_operation(operation):
 	nasm_instruction("pop", "ebx", "", "", "dépile la seconde operande dans ebx")
 	nasm_instruction("pop", "eax", "", "", "dépile la permière operande dans eax")
 	
-	code = {"+":"add","*":"imul"} #Un dictionnaire qui associe à chaque opérateur sa fonction nasm
+	code = {"+":"add","-":"sub","*":"imul","/" : "idiv"} #Un dictionnaire qui associe à chaque opérateur sa fonction nasm
 	#Voir: https://www.bencode.net/blob/nasmcheatsheet.pdf
-	if op in ['+']:
+	if op in ['+',"-"]:
 		nasm_instruction(code[op], "eax", "ebx", "", "effectue l'opération eax" +op+"ebx et met le résultat dans eax" )
-	if op == '*':
+	if op in ['*', "/"]:
 		nasm_instruction(code[op], "ebx", "", "", "effectue l'opération eax" +op+"ebx et met le résultat dans eax" )
 	nasm_instruction("push",  "eax" , "", "", "empile le résultat");	
 
@@ -147,16 +148,16 @@ if __name__ == "__main__":
 				if verbose:
 					print("There are some errors")
 					exit(1)
+			else:
+				borrowChecher=borrow_checker.BorrowChecker(arbre)
+				if borrowChecher.check():
+					if verbose:
+						arbre.afficher()
+					gen_programme(arbre)
+					exit(0)
 				else:
-					borrowChecher=borrow_checker.BorrowChecker(arbre)
-					if borrowChecher.check():
-						if verbose:
-							arbre.afficher()
-						exit(0)
-					else:
-						if verbose:
-							print("Error detected !")
-						exit(1)
-			gen_programme(arbre)
+					if verbose:
+						print("Error detected !")
+					exit(1)
 		except EOFError:
 			exit()
