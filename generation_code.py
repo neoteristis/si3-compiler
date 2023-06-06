@@ -8,6 +8,19 @@ num_etiquette_courante = -1 #Permet de donner des noms différents à toutes les
 
 afficher_table = False
 afficher_nasm = False
+
+def getContextVar(symbolTable, function, name):
+    variables=symbolTable[function].variables
+    for variable in variables:
+        if variable[0]==name:
+            return variable
+    return None
+
+def gen_esp_stack(symbolTable, function, name):
+    variable=getContextVar(symbolTable, function, name)
+    index=(int(variable[2])*4)+4
+    return "[esp-"+str(index)+"]"
+
 """
 Un print qui ne fonctionne que si la variable afficher_table vaut Vrai.
 (permet de choisir si on affiche le code assembleur ou la table des symboles)
@@ -56,7 +69,7 @@ def nasm_nouvelle_etiquette():
 """
 Affiche le code nasm correspondant à tout un programme
 """
-def gen_programme(programme):
+def gen_programme(programme, symbolTable):
 	printifm('%include\t"io.asm"')
 	printifm('section\t.bss')
 	printifm('sinput:	resb	255	;reserve a 255 byte space in memory for the users input string')
@@ -64,44 +77,67 @@ def gen_programme(programme):
 	printifm('section\t.text')
 	printifm('global _start')
 	printifm('_start:')
-	gen_listeInstructions(programme.listeInstructions)
+	gen_memory("main",symbolTable)
+	gen_listeInstructions("main",programme.listeInstructions,symbolTable)
 	nasm_instruction("mov", "eax", "1", "", "1 est le code de SYS_EXIT") 
 	nasm_instruction("mov", "ebx", "0", "", "0 équivalent à exit(0)")
 	nasm_instruction("int", "0x80", "", "", "exit") 
+ 
+def gen_memory(function, symbolTable):
+    variables = symbolTable[function].variables
+    for variable in variables:
+        nasm_instruction("push", "0", "", "", "réserve espace pour variable")
 """
 Affiche le code nasm correspondant à une suite d'instructions
 """
-def gen_listeInstructions(listeInstructions):
+def gen_listeInstructions(function,listeInstructions,symbolTable):
 	for instruction in listeInstructions.instructions:
-		gen_instruction(instruction)
+		gen_instruction(function,instruction,symbolTable)
 
 """
 Affiche le code nasm correspondant à une instruction
 """
-def gen_instruction(instruction):
+def gen_instruction(function,instruction,symbolTable):
 	if type(instruction) == arbre_abstrait.FunctionOperation:
 		if instruction.name=="ecrire":
-			gen_ecrire(arbre_abstrait.Ecrire(instruction.listeParameters.parameters[0]))
+			gen_ecrire(symbolTable, function,arbre_abstrait.Ecrire(instruction.listeParameters.parameters[0]))
+	elif type(instruction) == arbre_abstrait.DeclareOperation:
+			gen_declaration(function,instruction,symbolTable)
 	else:
 		print("type instruction inconnu",type(instruction))
 		exit(0)
+  
+def gen_declaration(function,instruction,symbolTable):
+    if type(instruction.expr)==arbre_abstrait.NoneOperation:
+        return
+    gen_expression(symbolTable, function,instruction.expr)
+    nasm_instruction("pop", "eax", "", "", "")
+    nasm_instruction("mov", gen_esp_stack(symbolTable,function,instruction.name), "eax")
 
 """
 Affiche le code nasm correspondant au fait d'envoyer la valeur entière d'une expression sur la sortie standard
 """	
-def gen_ecrire(ecrire):
-	gen_expression(ecrire.exp) #on calcule et empile la valeur d'expression
+def gen_ecrire(symbolTable, function,ecrire):
+	gen_expression(symbolTable, function,ecrire.exp) #on calcule et empile la valeur d'expression
 	nasm_instruction("pop", "eax", "", "", "") #on dépile la valeur d'expression sur eax
 	nasm_instruction("call", "iprintLF", "", "", "") #on envoie la valeur d'eax sur la sortie standard
 
 """
 Affiche le code nasm pour calculer et empiler la valeur d'une expression
 """
-def gen_expression(expression):
+def gen_expression(symbolTable, function, expression):
 	if type(expression) == arbre_abstrait.Operation:
-		gen_operation(expression) #on calcule et empile la valeur de l'opération
+		gen_operation(symbolTable, function, expression) #on calcule et empile la valeur de l'opération
 	elif type(expression) == arbre_abstrait.Entier:
-		nasm_instruction("push", str(expression.valeur), "", "", "") ; #on met sur la pile la valeur entière			
+		nasm_instruction("push", str(expression.valeur), "", "", "") ; #on met sur la pile la valeur entière
+	elif type(expression) == arbre_abstrait.Boolean:
+		if expression.valeur==True:
+			nasm_instruction("push", str(0), "", "", "") ; #on met sur la pile la valeur entière
+		else:
+			nasm_instruction("push", str(1), "", "", "") ; #on met sur la pile la valeur entière
+	elif type(expression) == arbre_abstrait.Variable:
+		nasm_instruction("mov", "eax", gen_esp_stack(symbolTable, function, expression.name), "", "")
+		nasm_instruction("push", "eax", "" , "", "")
 	else:
 		print("type d'expression inconnu",type(expression))
 		exit(0)
@@ -110,11 +146,11 @@ def gen_expression(expression):
 """
 Affiche le code nasm pour calculer l'opération et la mettre en haut de la pile
 """
-def gen_operation(operation):
+def gen_operation(symbolTable, function,operation):
 	op = operation.op
 		
-	gen_expression(operation.exp1) #on calcule et empile la valeur de exp1
-	gen_expression(operation.exp2) #on calcule et empile la valeur de exp2
+	gen_expression(symbolTable, function,operation.exp1) #on calcule et empile la valeur de exp1
+	gen_expression(symbolTable, function,operation.exp2) #on calcule et empile la valeur de exp2
 	
 	nasm_instruction("pop", "ebx", "", "", "dépile la seconde operande dans ebx")
 	nasm_instruction("pop", "eax", "", "", "dépile la permière operande dans eax")
@@ -153,7 +189,7 @@ if __name__ == "__main__":
 				if borrowChecher.check():
 					if verbose:
 						arbre.afficher()
-					gen_programme(arbre)
+					gen_programme(arbre,borrowChecher.symbolTable)
 					exit(0)
 				else:
 					if verbose:

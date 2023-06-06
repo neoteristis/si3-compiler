@@ -409,8 +409,7 @@ if __name__ == '__main__':
 					borrowChecher=borrow_checker.BorrowChecker(arbre)
 					if borrowChecher.check():
 						if verbose:
-							print(borrowChecher.symbolTable)
-							#arbre.afficher()
+							arbre.afficher()
 						exit(0)
 					else:
 						if verbose:

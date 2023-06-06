@@ -1,8 +1,2 @@
 entier a=5;
-
-entier test(){
-	entier tyh=9;
-	a=789;
-}
-
-entier b=9;
+ecrire(a);

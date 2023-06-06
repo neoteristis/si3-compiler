@@ -14,9 +14,9 @@ class Context:
         self.functions=[]
         self.current_function=[]
     def addFunction(self, name, params, returnType):
-        self.functions.append([name, params, returnType])
+        self.functions.append([name, params, returnType,len(self.functions)])
     def addVariables(self, name, type):
-        self.variables.append([name,type])
+        self.variables.append([name,type,len(self.variables)])
     def setCurrentFunction(self, name, returnType):
         self.current_function=[name,returnType]
     def extend(self, context):
@@ -27,7 +27,7 @@ class Context:
     def __repr__(self):
         buf = ""
         for i in self.variables:
-            buf = buf + "VAR / " + i[0] + " / " + i[1] + "\n"
+            buf = buf + "VAR / " + i[0] + " / " + i[1] + " / " + str(i[2]) + "\n"
         return buf
 
 class BorrowChecker:
@@ -106,9 +106,11 @@ class BorrowChecker:
                 self.symbolTable[instruction.name]=Context()
                 for arg in args:
                     self.symbolTable[instruction.name].addVariables(arg.name,arg.type)
+                for function in context.functions:
+                    self.symbolTable[instruction.name].functions.append(function)
                 self.symbolTable[instruction.name].setCurrentFunction(instruction.name, instruction.return_type)
                 if type(instruction.instructions) != arbre_abstrait.NoneOperation:
-                    self.checkListInstructions(context,self.symbolTable[instruction.name],instruction.instructions.instructions)
+                    self.checkListInstructions(Context(),self.symbolTable[instruction.name],instruction.instructions.instructions)
             elif arbre_abstrait.LoopOperation == type(instruction):
                 expr=instruction.expr
                 if not self.checkType(self.checkExpression(context, expr), BOOL):
