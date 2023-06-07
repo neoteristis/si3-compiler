@@ -16,10 +16,10 @@ def getContextVar(symbolTable, function, name):
             return variable
     return None
 
-def gen_esp_stack(symbolTable, function, name):
+def gen_ebp_stack(symbolTable, function, name):
     variable=getContextVar(symbolTable, function, name)
     index=(int(variable[2])*4)+4
-    return "[esp-"+str(index)+"]"
+    return "[ebp-"+str(index)+"]"
 
 """
 Un print qui ne fonctionne que si la variable afficher_table vaut Vrai.
@@ -85,8 +85,9 @@ def gen_programme(programme, symbolTable):
  
 def gen_memory(function, symbolTable):
     variables = symbolTable[function].variables
-    for variable in variables:
-        nasm_instruction("push", "0", "", "", "réserve espace pour variable")
+    nasm_instruction("push", "ebp", "", "", "réserve espace pour variable")
+    nasm_instruction("mov", "ebp", "esp", "", "réserve espace pour variable")
+    nasm_instruction("sub", "esp", str(len(variables)*4), "", "réserve espace pour variable")
 """
 Affiche le code nasm correspondant à une suite d'instructions
 """
@@ -103,6 +104,8 @@ def gen_instruction(function,instruction,symbolTable):
 			gen_ecrire(symbolTable, function,arbre_abstrait.Ecrire(instruction.listeParameters.parameters[0]))
 	elif type(instruction) == arbre_abstrait.DeclareOperation:
 			gen_declaration(function,instruction,symbolTable)
+	elif type(instruction) == arbre_abstrait.Operation:
+			gen_operation(symbolTable, function, instruction)
 	else:
 		print("type instruction inconnu",type(instruction))
 		exit(0)
@@ -112,7 +115,7 @@ def gen_declaration(function,instruction,symbolTable):
         return
     gen_expression(symbolTable, function,instruction.expr)
     nasm_instruction("pop", "eax", "", "", "")
-    nasm_instruction("mov", gen_esp_stack(symbolTable,function,instruction.name), "eax")
+    nasm_instruction("mov", gen_ebp_stack(symbolTable,function,instruction.name), "eax")
 
 """
 Affiche le code nasm correspondant au fait d'envoyer la valeur entière d'une expression sur la sortie standard
@@ -132,12 +135,14 @@ def gen_expression(symbolTable, function, expression):
 		nasm_instruction("push", str(expression.valeur), "", "", "") ; #on met sur la pile la valeur entière
 	elif type(expression) == arbre_abstrait.Boolean:
 		if expression.valeur==True:
-			nasm_instruction("push", str(0), "", "", "") ; #on met sur la pile la valeur entière
-		else:
 			nasm_instruction("push", str(1), "", "", "") ; #on met sur la pile la valeur entière
+		else:
+			nasm_instruction("push", str(0), "", "", "") ; #on met sur la pile la valeur entière
 	elif type(expression) == arbre_abstrait.Variable:
-		nasm_instruction("mov", "eax", gen_esp_stack(symbolTable, function, expression.name), "", "")
+		nasm_instruction("mov", "eax", gen_ebp_stack(symbolTable, function, expression.name), "", "")
 		nasm_instruction("push", "eax", "" , "", "")
+	elif type(expression) == arbre_abstrait.NoneOperation:
+		nasm_instruction("push", "0", "" , "", "")
 	else:
 		print("type d'expression inconnu",type(expression))
 		exit(0)
@@ -148,6 +153,12 @@ Affiche le code nasm pour calculer l'opération et la mettre en haut de la pile
 """
 def gen_operation(symbolTable, function,operation):
 	op = operation.op
+ 
+	if op == "=":
+		gen_expression(symbolTable, function,operation.exp2)
+		nasm_instruction("pop", "eax", "", "", "")
+		nasm_instruction("mov", gen_ebp_stack(symbolTable, function, operation.exp1.name), "eax", "", "")
+		return
 		
 	gen_expression(symbolTable, function,operation.exp1) #on calcule et empile la valeur de exp1
 	gen_expression(symbolTable, function,operation.exp2) #on calcule et empile la valeur de exp2
@@ -155,12 +166,17 @@ def gen_operation(symbolTable, function,operation):
 	nasm_instruction("pop", "ebx", "", "", "dépile la seconde operande dans ebx")
 	nasm_instruction("pop", "eax", "", "", "dépile la permière operande dans eax")
 	
-	code = {"+":"add","-":"sub","*":"imul","/" : "idiv"} #Un dictionnaire qui associe à chaque opérateur sa fonction nasm
+	code = {"+":"add","-":"sub","*":"imul","/" : "idiv", "et" : "and", "ou" : "or", "non" : "not"} #Un dictionnaire qui associe à chaque opérateur sa fonction nasm
 	#Voir: https://www.bencode.net/blob/nasmcheatsheet.pdf
 	if op in ['+',"-"]:
-		nasm_instruction(code[op], "eax", "ebx", "", "effectue l'opération eax" +op+"ebx et met le résultat dans eax" )
+		nasm_instruction(code[op], "eax", "ebx", "", "effectue l'opération eax " +op+" ebx et met le résultat dans eax" )
 	if op in ['*', "/"]:
-		nasm_instruction(code[op], "ebx", "", "", "effectue l'opération eax" +op+"ebx et met le résultat dans eax" )
+		nasm_instruction(code[op], "ebx", "", "", "effectue l'opération eax " +op+" ebx et met le résultat dans eax" )
+	if op in ["et","ou"]:
+		nasm_instruction(code[op], "eax", "ebx", "", "effectue l'opération eax " +op+" ebx et met le résultat dans eax")
+	if op=="non":
+		nasm_instruction("xor", "eax", "1", "", "")
+		
 	nasm_instruction("push",  "eax" , "", "", "empile le résultat");	
 
 
@@ -188,7 +204,8 @@ if __name__ == "__main__":
 				borrowChecher=borrow_checker.BorrowChecker(arbre)
 				if borrowChecher.check():
 					if verbose:
-						arbre.afficher()
+						pass
+						#arbre.afficher()
 					gen_programme(arbre,borrowChecher.symbolTable)
 					exit(0)
 				else:

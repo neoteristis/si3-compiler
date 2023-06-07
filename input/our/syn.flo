@@ -1,2 +1,4 @@
 entier a=5;
 ecrire(a);
+a=9+(3*5);
+ecrire(a);

@@ -172,8 +172,12 @@ class BorrowChecker:
                     raise Exception(expr1.name +" is incompatible type with " + str(expr2.valeur))
             else:
                 typeE=self.checkExpression(context_parent, expr2)
-                if not self.checkType(self.getTypeOfVar(context_parent,expr1.name),typeE):
-                    raise Exception(expr1.name + " is incompatible with type of right expression")
+                if op=="non":
+                    if typeE!=None:
+                        raise Exception(expr1.name + " is incompatible with type of right expression")
+                else:
+                    if not self.checkType(self.getTypeOfVar(context_parent,expr1.name),typeE):
+                        raise Exception(expr1.name + " is incompatible with type of right expression")
         elif type(expr1)==arbre_abstrait.Entier:
             if not self.checkOp(INT, op):
                 raise Exception("Forbidden operation between a number and a expression")
@@ -206,7 +210,7 @@ class BorrowChecker:
                 typeE=self.checkExpression(context_parent, expr2)
                 if op=="non":
                     if typeE!=None:
-                       raise Exception(str(expr1.valeur) + " is incompatible with type of right expression") 
+                        raise Exception(str(expr1.valeur) + " is incompatible with type of right expression") 
                 else:
                     if not self.checkType(BOOL,typeE):
                         raise Exception(str(expr1.valeur) + " is incompatible with type of right expression")
