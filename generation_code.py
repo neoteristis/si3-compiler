@@ -141,6 +141,52 @@ def gen_boucle(symbolTable, function, instruction: arbre_abstrait.LoopOperation)
 	nasm_instruction("mov", "eax", "0")
 	nasm_instruction("push", "eax")
 
+# ====================================================================================================
+# THIS IS CURRENTLY NOT WORKING AND IN PROGRESS
+# ====================================================================================================
+
+"""
+Affiche le code nasm correspondant à une fonction
+"""
+def gen_fonction(symbolTable, instruction: arbre_abstrait.Function):
+	# Entête de la fonction
+	nasm_instruction("section", ".text")
+	nasm_instruction("global", instruction.name)
+	nasm_instruction(instruction.name + ":")
+
+	# Début de la fonction
+	nasm_instruction("push", "ebp")
+	nasm_instruction("mov", "ebp", "esp")
+
+	# Génération du code pour les instructions de la fonction
+	gen_listeInstructions(instruction.name, instruction.instructions, symbolTable)
+
+	# Fin de la fonction
+	nasm_instruction("mov", "esp", "ebp")
+	nasm_instruction("pop", "ebp")
+	nasm_instruction("ret")
+
+"""
+Affiche le code nasm pour gérer les opérations de retour
+"""
+def gen_return(symbolTable, function, instruction: arbre_abstrait.ReturnOperation):
+	gen_expression(symbolTable, function, instruction.expr)
+	nasm_instruction("pop", "eax", "", "", "")
+	nasm_instruction("mov", "esp", "ebp", "", "")
+	nasm_instruction("pop", "ebp", "", "", "")
+	nasm_instruction("ret", "", "", "", "")
+
+"""
+Affiche le code nasm correspondant à une function operation
+"""
+def gen_functionOperation(symbolTable, function, instruction: arbre_abstrait.FunctionOperation):
+	if instruction.name == "ecrire":
+		gen_ecrire(symbolTable, function, instruction)
+	else:
+		print("type instruction inconnu",type(instruction))
+		exit(0)
+
+# ====================================================================================================
 
 """
 Affiche le code nasm correspondant à une instruction
@@ -159,6 +205,14 @@ def gen_instruction(function,instruction,symbolTable):
 			gen_listeInstructions(function,instruction,symbolTable)	
 	elif type(instruction) == arbre_abstrait.LoopOperation:
 			gen_boucle(symbolTable, function, instruction)
+	# CURRENTLY NOT WORKING
+	elif type(instruction) == arbre_abstrait.Function:
+			gen_fonction(symbolTable, instruction)
+	elif type(instruction) == arbre_abstrait.ReturnOperation:
+			gen_return(symbolTable, function, instruction)
+	elif type(instruction) == arbre_abstrait.FunctionOperation:
+			gen_functionOperation(symbolTable, function, instruction)
+	# ====================================================================================================
 	else:
 		print("type instruction inconnu",type(instruction))
 		exit(0)
@@ -200,8 +254,12 @@ def gen_expression(symbolTable, function, expression):
 		gen_condition(symbolTable, function, expression)
 	elif type(expression) == arbre_abstrait.ListeInstructions:
 		gen_listeInstructions(function,expression,symbolTable)
+	# CURRENTLY NOT WORKING
 	elif type(expression) == arbre_abstrait.LoopOperation:
 		gen_boucle(symbolTable, function, expression)
+	elif type(expression) == arbre_abstrait.FunctionOperation:
+		gen_functionOperation(symbolTable, function, expression)
+	# ====================================================================================================
 	else:
 		print("type d'expression inconnu",type(expression))
 		exit(0)
