@@ -10,16 +10,16 @@ afficher_table = False
 afficher_nasm = False
 
 def getContextVar(symbolTable, function, name):
-    variables=symbolTable[function].variables
-    for variable in variables:
-        if variable[0]==name:
-            return variable
-    return None
+	variables=symbolTable[function].variables
+	for variable in variables:
+		if variable[0]==name:
+			return variable
+	return None
 
 def gen_ebp_stack(symbolTable, function, name):
-    variable=getContextVar(symbolTable, function, name)
-    index=(int(variable[2])*4)+4
-    return "[ebp-"+str(index)+"]"
+	variable=getContextVar(symbolTable, function, name)
+	index=(int(variable[2])*4)+4
+	return "[ebp-"+str(index)+"]"
 
 """
 Un print qui ne fonctionne que si la variable afficher_table vaut Vrai.
@@ -63,6 +63,7 @@ def nasm_instruction(opcode, op1="", op2="", op3="", comment=""):
 Retourne le nom d'une nouvelle étiquette
 """
 def nasm_nouvelle_etiquette():
+	global num_etiquette_courante
 	num_etiquette_courante+=1
 	return "e"+str(num_etiquette_courante)
 
@@ -84,16 +85,62 @@ def gen_programme(programme, symbolTable):
 	nasm_instruction("int", "0x80", "", "", "exit") 
  
 def gen_memory(function, symbolTable):
-    variables = symbolTable[function].variables
-    nasm_instruction("push", "ebp", "", "", "réserve espace pour variable")
-    nasm_instruction("mov", "ebp", "esp", "", "réserve espace pour variable")
-    nasm_instruction("sub", "esp", str(len(variables)*4), "", "réserve espace pour variable")
+	variables = symbolTable[function].variables
+	nasm_instruction("push", "ebp", "", "", "réserve espace pour variable")
+	nasm_instruction("mov", "ebp", "esp", "", "réserve espace pour variable")
+	nasm_instruction("sub", "esp", str(len(variables)*4), "", "réserve espace pour variable")
+	
 """
 Affiche le code nasm correspondant à une suite d'instructions
 """
 def gen_listeInstructions(function,listeInstructions,symbolTable):
 	for instruction in listeInstructions.instructions:
 		gen_instruction(function,instruction,symbolTable)
+
+"""
+Affiche le code nasm pour gérer les conditions
+"""
+def gen_condition(symbolTable, function, instruction: arbre_abstrait.ConditionalOperation):
+	etiquette_fin = nasm_nouvelle_etiquette()
+	etiquette_else = nasm_nouvelle_etiquette()
+
+	gen_expression(symbolTable, function, instruction.statement)
+	nasm_instruction("pop", "eax")
+	nasm_instruction("cmp", "eax", "0")
+	nasm_instruction("jne", etiquette_else)
+
+	# TODO: Gérer dans quel branche on va si on a une condition vraie ou une condition fausse
+
+	if isinstance(instruction.statement2, arbre_abstrait.ListeInstructions):
+		gen_expression(symbolTable, function, instruction.statement2)
+
+	nasm_instruction("jmp", etiquette_fin)
+	nasm_instruction(etiquette_else + ":")
+	nasm_instruction("mov", "eax", "0")
+	nasm_instruction(etiquette_fin + ":")
+	nasm_instruction("push", "eax")
+
+"""
+Affiche le code nasm correspondant à une boucle TANT QUE
+"""
+def gen_boucle(symbolTable, function, instruction: arbre_abstrait.LoopOperation):
+	etiquette_debut = nasm_nouvelle_etiquette()
+	etiquette_fin = nasm_nouvelle_etiquette()
+
+	nasm_instruction(etiquette_debut + ":")
+	gen_expression(symbolTable, function, instruction.statement)
+	nasm_instruction("pop", "eax")
+	nasm_instruction("cmp", "eax", "0")
+	nasm_instruction("je", etiquette_fin)
+
+	if isinstance(instruction.statement, arbre_abstrait.ListeInstructions):
+		gen_expression(symbolTable, function, instruction.statement)
+
+	nasm_instruction("jmp", etiquette_debut)
+	nasm_instruction(etiquette_fin + ":")
+	nasm_instruction("mov", "eax", "0")
+	nasm_instruction("push", "eax")
+
 
 """
 Affiche le code nasm correspondant à une instruction
@@ -106,16 +153,22 @@ def gen_instruction(function,instruction,symbolTable):
 			gen_declaration(function,instruction,symbolTable)
 	elif type(instruction) == arbre_abstrait.Operation:
 			gen_operation(symbolTable, function, instruction)
+	elif type(instruction) == arbre_abstrait.ConditionalOperation:
+			gen_condition(symbolTable, function, instruction)
+	elif type(instruction) == arbre_abstrait.ListeInstructions:
+			gen_listeInstructions(function,instruction,symbolTable)	
+	elif type(instruction) == arbre_abstrait.LoopOperation:
+			gen_boucle(symbolTable, function, instruction)
 	else:
 		print("type instruction inconnu",type(instruction))
 		exit(0)
   
 def gen_declaration(function,instruction,symbolTable):
-    if type(instruction.expr)==arbre_abstrait.NoneOperation:
-        return
-    gen_expression(symbolTable, function,instruction.expr)
-    nasm_instruction("pop", "eax", "", "", "")
-    nasm_instruction("mov", gen_ebp_stack(symbolTable,function,instruction.name), "eax")
+	if type(instruction.expr)==arbre_abstrait.NoneOperation:
+		return
+	gen_expression(symbolTable, function,instruction.expr)
+	nasm_instruction("pop", "eax", "", "", "")
+	nasm_instruction("mov", gen_ebp_stack(symbolTable,function,instruction.name), "eax")
 
 """
 Affiche le code nasm correspondant au fait d'envoyer la valeur entière d'une expression sur la sortie standard
@@ -143,6 +196,12 @@ def gen_expression(symbolTable, function, expression):
 		nasm_instruction("push", "eax", "" , "", "")
 	elif type(expression) == arbre_abstrait.NoneOperation:
 		nasm_instruction("push", "0", "" , "", "")
+	elif type(expression) == arbre_abstrait.ConditionalOperation:
+		gen_condition(symbolTable, function, expression)
+	elif type(expression) == arbre_abstrait.ListeInstructions:
+		gen_listeInstructions(function,expression,symbolTable)
+	elif type(expression) == arbre_abstrait.LoopOperation:
+		gen_boucle(symbolTable, function, expression)
 	else:
 		print("type d'expression inconnu",type(expression))
 		exit(0)
