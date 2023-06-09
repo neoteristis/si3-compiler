@@ -361,13 +361,17 @@ def gen_operation(symbolTable, function, operation):
     if op in ['+', "-"]:
         nasm_instruction(code[op], "eax", "ebx", "",
                          "effectue l'opération eax " + op + " ebx et met le résultat dans eax")
+        nasm_instruction("push", "eax", "", "", "empile le résultat")
     elif op in ['*', "/"]:
         nasm_instruction(code[op], "ebx", "", "", "effectue l'opération eax " + op + " ebx et met le résultat dans eax")
+        nasm_instruction("push", "eax", "", "", "empile le résultat")
     elif op in ["et", "ou"]:
         nasm_instruction(code[op], "eax", "ebx", "",
                          "effectue l'opération eax " + op + " ebx et met le résultat dans eax")
+        nasm_instruction("push", "eax", "", "", "empile le résultat")
     elif op == "non":
         nasm_instruction("xor", "eax", "1", "", "")
+        nasm_instruction("push", "eax", "", "", "empile le résultat")
     elif op in ['>', '<', '>=', '<=', '==', '!=']:
         true_label = nasm_nouvelle_etiquette()  # Étiquette pour le cas où la condition est vraie
         end_label = nasm_nouvelle_etiquette()  # Étiquette pour la fin de la comparaison
@@ -407,7 +411,7 @@ if __name__ == "__main__":
                 if borrowChecher.check():
                     if verbose:
                         pass
-                    arbre.afficher()
+                    #arbre.afficher()
                     gen_programme(arbre, borrowChecher.symbolTable)
                     exit(0)
                 else:
