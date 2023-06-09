@@ -1,4 +1,4 @@
-entier a=0;
+entier a=9;
 si(a>5){
     ecrire(9);
 }

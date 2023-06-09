@@ -131,21 +131,28 @@ Affiche le code nasm pour gérer les conditions
 def gen_condition(symbolTable, function, instruction: arbre_abstrait.ConditionalOperation):
     etiquette_if = nasm_nouvelle_etiquette()
     etiquette_else = nasm_nouvelle_etiquette()
+    etiquette_fin = nasm_nouvelle_etiquette()
+
+    gen_expression(symbolTable,function,instruction.expr)
 
     nasm_instruction("pop", "eax")
     nasm_instruction("cmp", "eax", "0")
-    nasm_instruction("jne", etiquette_else)
+    nasm_instruction("je", etiquette_else)
 
     nasm_instruction("jmp", etiquette_if)
+
+    nasm_instruction("mov", "eax", "0")
+
+    nasm_instruction(etiquette_if + ":")
     gen_expression(symbolTable, function, instruction.statement)
+    nasm_instruction("push", "eax")
+    nasm_instruction("jmp", etiquette_fin)
 
     nasm_instruction(etiquette_else + ":")
     if isinstance(instruction.statement2, arbre_abstrait.ListeInstructions):
         gen_expression(symbolTable, function, instruction.statement2)
 
-    nasm_instruction("mov", "eax", "0")
-    nasm_instruction(etiquette_if + ":")
-    nasm_instruction("push", "eax")
+    nasm_instruction(etiquette_fin + ":")
 
 
 """
@@ -334,22 +341,46 @@ def gen_operation(symbolTable, function, operation):
     nasm_instruction("pop", "ebx", "", "", "dépile la seconde operande dans ebx")
     nasm_instruction("pop", "eax", "", "", "dépile la permière operande dans eax")
 
-    code = {"+": "add", "-": "sub", "*": "imul", "/": "idiv", "et": "and", "ou": "or",
-            "non": "not"}  # Un dictionnaire qui associe à chaque opérateur sa fonction nasm
+    code = {"+": "add", 
+            "-": "sub", 
+            "*": "imul", 
+            "/": "idiv", 
+            "et": "and", 
+            "ou": "or",
+            "non": "not",
+            ">=": "jge",  # saut si inférieur ou égal
+        	"<=": "jle",  # saut si supérieur ou égal
+        	"<": "jl",  # saut si inférieur
+        	">": "jg",  # saut si supérieur
+			"==" :"je",
+        	"!=": "jne"  # saut si différent
+    }
+    # Un dictionnaire qui associe à chaque opérateur sa fonction nasm
+
     # Voir: https://www.bencode.net/blob/nasmcheatsheet.pdf
     if op in ['+', "-"]:
         nasm_instruction(code[op], "eax", "ebx", "",
                          "effectue l'opération eax " + op + " ebx et met le résultat dans eax")
-    if op in ['*', "/"]:
+    elif op in ['*', "/"]:
         nasm_instruction(code[op], "ebx", "", "", "effectue l'opération eax " + op + " ebx et met le résultat dans eax")
-    if op in ["et", "ou"]:
+    elif op in ["et", "ou"]:
         nasm_instruction(code[op], "eax", "ebx", "",
                          "effectue l'opération eax " + op + " ebx et met le résultat dans eax")
-    if op == "non":
+    elif op == "non":
         nasm_instruction("xor", "eax", "1", "", "")
+    elif op in ['>', '<', '>=', '<=', '==', '!=']:
+        true_label = nasm_nouvelle_etiquette()  # Étiquette pour le cas où la condition est vraie
+        end_label = nasm_nouvelle_etiquette()  # Étiquette pour la fin de la comparaison
 
-    nasm_instruction("push", "eax", "", "", "empile le résultat");
+        nasm_instruction("cmp", "eax", "ebx", "", "compare eax et ebx")
 
+        # Effectuer le saut en fonction de l'opérateur de comparaison
+        nasm_instruction(code[op], true_label, "", "", "saut si la condition est vraie")
+        nasm_instruction("push", "0", "", "", "empile 0 (faux)")
+        nasm_instruction("jmp", end_label, "", "", "saut à la fin de la comparaison")
+        nasm_instruction(true_label + ":", "", "", "", "étiquette pour le cas où la condition est vraie")
+        nasm_instruction("push", "1", "", "", "empile 1 (vrai)")
+        nasm_instruction(end_label + ":", "", "", "", "étiquette pour la fin de la comparaison")
 
 if __name__ == "__main__":
     afficher_nasm = True
@@ -376,7 +407,7 @@ if __name__ == "__main__":
                 if borrowChecher.check():
                     if verbose:
                         pass
-                    # arbre.afficher()
+                    arbre.afficher()
                     gen_programme(arbre, borrowChecher.symbolTable)
                     exit(0)
                 else:

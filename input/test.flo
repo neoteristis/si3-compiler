@@ -1,4 +1,10 @@
-entier f(){
- retourner 3;
+entier a=0;
+si(non (a<2) ou (9>6)){
+    ecrire(9);
+}sinon {
+    ecrire(8);
 }
-ecrire(f());
+
+
+[non True] et False
+[non a > 9]
