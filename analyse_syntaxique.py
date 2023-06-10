@@ -72,6 +72,11 @@ class FloParser(Parser):
 		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
 		return arbre_abstrait.UnaryOperator("*",arbre_abstrait.Entier(-1))
 
+	@_("NON")
+	def unary_operator(self, p):
+		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
+		return arbre_abstrait.UnaryOperator("non",arbre_abstrait.NoneOperation())
+
 	@_('unary_expression')
 	def cast_expression(self, p):
 		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
@@ -120,21 +125,33 @@ class FloParser(Parser):
 	@_("relational_expression '<' additive_expression")
 	def relational_expression(self, p):
 		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
+		if type(p.relational_expression) == arbre_abstrait.Operation and p.relational_expression.op == "non":
+			if type(p.relational_expression.exp2) != arbre_abstrait.Boolean:
+				return arbre_abstrait.Operation("non", arbre_abstrait.NoneOperation(), arbre_abstrait.Operation("<", p.relational_expression.exp2, p.additive_expression))
 		return arbre_abstrait.Operation("<", p.relational_expression, p.additive_expression)
 
 	@_("relational_expression '>' additive_expression")
 	def relational_expression(self, p):
 		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
+		if type(p.relational_expression) == arbre_abstrait.Operation and p.relational_expression.op == "non":
+			if type(p.relational_expression.exp2) != arbre_abstrait.Boolean:
+				return arbre_abstrait.Operation("non", arbre_abstrait.NoneOperation(), arbre_abstrait.Operation(">", p.relational_expression.exp2, p.additive_expression))
 		return arbre_abstrait.Operation(">", p.relational_expression, p.additive_expression)
 
 	@_("relational_expression INFERIEUR_OU_EGAL additive_expression")
 	def relational_expression(self, p):
 		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
+		if type(p.relational_expression) == arbre_abstrait.Operation and p.relational_expression.op == "non":
+			if type(p.relational_expression.exp2) != arbre_abstrait.Boolean:
+				return arbre_abstrait.Operation("non", arbre_abstrait.NoneOperation(), arbre_abstrait.Operation("<=", p.relational_expression.exp2, p.additive_expression))
 		return arbre_abstrait.Operation("<=", p.relational_expression, p.additive_expression)
 
 	@_("relational_expression SUPERIEUR_OU_EGAL additive_expression")
 	def relational_expression(self, p):
 		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
+		if type(p.relational_expression) == arbre_abstrait.Operation and p.relational_expression.op == "non":
+			if type(p.relational_expression.exp2) != arbre_abstrait.Boolean:
+				return arbre_abstrait.Operation("non", arbre_abstrait.NoneOperation(), arbre_abstrait.Operation(">=", p.relational_expression.exp2, p.additive_expression))
 		return arbre_abstrait.Operation(">=", p.relational_expression, p.additive_expression)
 
 	@_("relational_expression")
@@ -145,11 +162,17 @@ class FloParser(Parser):
 	@_("equality_expression EQUAL relational_expression")
 	def equality_expression(self, p):
 		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
+		if type(p.equality_expression) == arbre_abstrait.Operation and p.equality_expression.op == "non":
+			if type(p.equality_expression.exp2) != arbre_abstrait.Boolean:
+				return arbre_abstrait.Operation("non", arbre_abstrait.NoneOperation(), arbre_abstrait.Operation("==", p.equality_expression.exp2, p.relational_expression))
 		return arbre_abstrait.Operation("==", p.equality_expression, p.relational_expression)
 
 	@_("equality_expression DIFFERENT relational_expression")
 	def equality_expression(self, p):
 		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
+		if type(p.equality_expression) == arbre_abstrait.Operation and p.equality_expression.op == "non":
+			if type(p.equality_expression.exp2) != arbre_abstrait.Boolean:
+				return arbre_abstrait.Operation("non", arbre_abstrait.NoneOperation(), arbre_abstrait.Operation("==", p.equality_expression.exp2, p.relational_expression))
 		return arbre_abstrait.Operation("!=", p.equality_expression, p.relational_expression)
 
 	@_("equality_expression")
@@ -173,11 +196,6 @@ class FloParser(Parser):
 		return arbre_abstrait.Operation("ou", p.logical_or_expression, p.logical_and_expression)
 
 	@_("logical_or_expression")
-	def conditional_expression(self, p):
-		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
-		return p.logical_or_expression
-
-	@_("NON logical_or_expression")
 	def conditional_expression(self, p):
 		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
 		return p.logical_or_expression
@@ -397,6 +415,7 @@ if __name__ == '__main__':
 						print("There are some errors")
 					exit(1)
 				else:
+					arbre.afficher()
 					borrowChecher=borrow_checker.BorrowChecker(arbre)
 					if borrowChecher.check():
 						if verbose:

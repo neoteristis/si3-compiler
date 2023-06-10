@@ -1,3 +1,5 @@
-si(Faux){
-    ecrire(1)
+si(non 5>6 et non 3==3){
+    ecrire(9);
+}sinon{
+    ecrire(8);
 }
