@@ -345,6 +345,7 @@ def gen_operation(symbolTable, function, operation):
             "-": "sub", 
             "*": "imul", 
             "/": "idiv", 
+            "%": "idiv",
             "et": "and", 
             "ou": "or",
             "non": "not",
@@ -363,6 +364,7 @@ def gen_operation(symbolTable, function, operation):
                          "effectue l'opération eax " + op + " ebx et met le résultat dans eax")
         nasm_instruction("push", "eax", "", "", "empile le résultat")
     elif op in ['*', "/"]:
+        nasm_instruction("mov", "edx", "0", "", "")
         nasm_instruction(code[op], "ebx", "", "", "effectue l'opération eax " + op + " ebx et met le résultat dans eax")
         nasm_instruction("push", "eax", "", "", "empile le résultat")
     elif op in ["et", "ou"]:
@@ -370,7 +372,13 @@ def gen_operation(symbolTable, function, operation):
                          "effectue l'opération eax " + op + " ebx et met le résultat dans eax")
         nasm_instruction("push", "eax", "", "", "empile le résultat")
     elif op == "non":
-        nasm_instruction("xor", "eax", "1", "", "")
+        nasm_instruction("xor", "ebx", "1", "", "")
+        nasm_instruction("mov", "eax","ebx","","")
+        nasm_instruction("push", "eax", "", "", "empile le résultat")
+    elif op == "%":
+        nasm_instruction("mov", "edx", "0", "", "")
+        nasm_instruction(code[op], "ebx", "", "", "effectue l'opération eax " + op + " ebx et met le résultat dans eax")
+        nasm_instruction("mov", "eax", "edx", "", "")
         nasm_instruction("push", "eax", "", "", "empile le résultat")
     elif op in ['>', '<', '>=', '<=', '==', '!=']:
         true_label = nasm_nouvelle_etiquette()  # Étiquette pour le cas où la condition est vraie
