@@ -7,7 +7,7 @@ readline:
     push    ecx        ; preserve ecx on stack to be restored after function
     push    ebx        ; preserve ebx on stack to be restored after function
     push    eax        ; preserve eax on stack to be restored after function
-    mov ecx, eax       ; address where store result
+    mov ecx, ebx       ; address where store result
 continue_reading:
     mov	eax, 3         ; syscall is read = 3
     mov	ebx, 0         ; fd is stdin = 0    
@@ -24,9 +24,9 @@ continue_reading:
 end_reading:
     mov BYTE [ecx], 0  ; Add zero to yield null-terminated string
     pop     eax        ; restore eax from value pushed onto stack at start
-    pop     ebx        ; restore eax from value pushed onto stack at start
-    pop     ecx        ; restore eax from value pushed onto stack at start
-    pop     edx        ; restore eax from value pushed onto stack at start
+    pop     ebx        ; restore ebx from value pushed onto stack at start
+    pop     ecx        ; restore ecx from value pushed onto stack at start
+    pop     edx        ; restore edx from value pushed onto stack at start
     ret
 
 ;------------------------------------------

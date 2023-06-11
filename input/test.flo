@@ -1,18 +1,6 @@
-ecrire(85-18*29);
-ecrire(85-(18*29));
-ecrire((85-18)*29);
-ecrire(85*18-29);
-ecrire(85*(18-29));
-ecrire((85*18)-29);
-ecrire(85+18/29);
-ecrire(85+(18/29));
-ecrire((85+18)/29);
-ecrire(85/18+29);
-ecrire(85/(18+29));
-ecrire((85/18)+29);
-ecrire(85-18/29);
-ecrire(85-(18/29));
-ecrire((85-18)/29);
-ecrire(85/18-29);
-ecrire(85/(18-29));
-ecrire((85/18)-29);
+entier test(entier b){
+    retourner b*2;
+}
+entier b=9;
+ecrire(test(8));
+ecrire(b);

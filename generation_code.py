@@ -10,6 +10,8 @@ num_etiquette_courante = -1  # Permet de donner des noms différents à toutes l
 afficher_table = False
 afficher_nasm = False
 
+delay_stack=[]
+
 
 def getContextVar(symbolTable, function, name):
     variables = symbolTable[function].variables
@@ -24,6 +26,12 @@ def gen_ebp_stack(symbolTable, function, name):
     index = (int(variable[2]) * 4) + 4
     return "[ebp-" + str(index) + "]"
 
+def delay_execute(function, arguments):
+    delay_stack.append([function, arguments])
+    
+def execute_stack():
+    for stack in delay_stack:
+        stack[0](*stack[1])
 
 """
 Un print qui ne fonctionne que si la variable afficher_table vaut Vrai.
@@ -105,6 +113,7 @@ def gen_programme(programme, symbolTable):
     nasm_instruction("mov", "eax", "1", "", "1 est le code de SYS_EXIT")
     nasm_instruction("mov", "ebx", "0", "", "0 équivalent à exit(0)")
     nasm_instruction("int", "0x80", "", "", "exit")
+    execute_stack()
 
 
 def gen_memory(function, symbolTable):
@@ -165,7 +174,7 @@ def gen_boucle(symbolTable, function, instruction: arbre_abstrait.LoopOperation)
     etiquette_fin = nasm_nouvelle_etiquette()
 
     nasm_instruction(etiquette_debut + ":")
-    gen_expression(symbolTable, function, instruction.statement)
+    gen_expression(symbolTable, function, instruction.expr)
     nasm_instruction("pop", "eax")
     nasm_instruction("cmp", "eax", "0")
     nasm_instruction("je", etiquette_fin)
@@ -190,21 +199,9 @@ Affiche le code nasm correspondant à une fonction
 
 def gen_fonction(symbolTable, instruction: arbre_abstrait.Function):
     # Entête de la fonction
-    nasm_instruction("section", ".text")
-    nasm_instruction("global", instruction.name)
-    nasm_instruction(instruction.name + ":")
-
-    # Début de la fonction
-    nasm_instruction("push", "ebp")
-    nasm_instruction("mov", "ebp", "esp")
-
+    nasm_instruction("_"+instruction.name + ":")
     # Génération du code pour les instructions de la fonction
     gen_listeInstructions(instruction.name, instruction.instructions, symbolTable)
-
-    # Fin de la fonction
-    nasm_instruction("mov", "esp", "ebp")
-    nasm_instruction("pop", "ebp")
-    nasm_instruction("ret")
 
 
 """
@@ -215,8 +212,6 @@ Affiche le code nasm pour gérer les opérations de retour
 def gen_return(symbolTable, function, instruction: arbre_abstrait.ReturnOperation):
     gen_expression(symbolTable, function, instruction.expr)
     nasm_instruction("pop", "eax", "", "", "")
-    nasm_instruction("mov", "esp", "ebp", "", "")
-    nasm_instruction("pop", "ebp", "", "", "")
     nasm_instruction("ret", "", "", "", "")
 
 
@@ -228,9 +223,21 @@ Affiche le code nasm correspondant à une function operation
 def gen_functionOperation(symbolTable, function, instruction: arbre_abstrait.FunctionOperation):
     if instruction.name == "ecrire":
         gen_ecrire(symbolTable, function, instruction)
+    elif instruction.name == "lire":
+        gen_lire(symbolTable, function)
     else:
-        print("type instruction inconnu", type(instruction))
-        exit(0)
+        variables = symbolTable[instruction.name].variables
+        nasm_instruction("push","ebp","","","")
+        nasm_instruction("mov","esi","esp","","")
+        for param in instruction.listeParameters.parameters:
+            gen_expression(symbolTable, function, param)
+            nasm_instruction("push","eax","","","")
+        nasm_instruction("mov","ebp","esi","","")
+        nasm_instruction("sub","esp" , str(len(variables) * 4), "", "")
+        nasm_instruction("call", "_"+instruction.name, "", "", "")
+        nasm_instruction("add", "esp" , str(len(variables) * 4),"","")
+        nasm_instruction("pop","ebp", "","","")
+        nasm_instruction("push" ,"eax","","","")
 
 
 # ====================================================================================================
@@ -244,6 +251,8 @@ def gen_instruction(function, instruction, symbolTable):
     if type(instruction) == arbre_abstrait.FunctionOperation:
         if instruction.name == "ecrire":
             gen_ecrire(symbolTable, function, arbre_abstrait.Ecrire(instruction.listeParameters.parameters[0]))
+        if instruction.name == "lire":
+            gen_lire(symbolTable, function)
     elif type(instruction) == arbre_abstrait.DeclareOperation:
         gen_declaration(function, instruction, symbolTable)
     elif type(instruction) == arbre_abstrait.Operation:
@@ -256,7 +265,7 @@ def gen_instruction(function, instruction, symbolTable):
         gen_boucle(symbolTable, function, instruction)
     # CURRENTLY NOT WORKING
     elif type(instruction) == arbre_abstrait.Function:
-        gen_fonction(symbolTable, instruction)
+        delay_execute(gen_fonction, [symbolTable,instruction])
     elif type(instruction) == arbre_abstrait.ReturnOperation:
         gen_return(symbolTable, function, instruction)
     elif type(instruction) == arbre_abstrait.FunctionOperation:
@@ -284,6 +293,10 @@ def gen_ecrire(symbolTable, function, ecrire):
     gen_expression(symbolTable, function, ecrire.exp)  # on calcule et empile la valeur d'expression
     nasm_instruction("pop", "eax", "", "", "")  # on dépile la valeur d'expression sur eax
     nasm_instruction("call", "iprintLF", "", "", "")  # on envoie la valeur d'eax sur la sortie standard
+    
+def gen_lire(symbolTable, function):
+    nasm_instruction("call", "readline", "","","")
+    nasm_instruction("push", "eax", "", "", "")
 
 
 """
