@@ -22,9 +22,13 @@ def getContextVar(symbolTable, function, name):
 
 
 def gen_ebp_stack(symbolTable, function, name):
-    variable = getContextVar(symbolTable, function, name)
-    index = (int(variable[2]) * 4) + 4
-    return "[ebp-" + str(index) + "]"
+    try:
+        variable = getContextVar(symbolTable, function, name)
+        index = (int(variable[2]) * 4) + 4
+        return "[ebp-" + str(index) + "]"
+    except:
+        raise Exception("Not find : " +name)
+    
 
 def delay_execute(function, arguments):
     delay_stack.append([function, arguments])
@@ -32,6 +36,14 @@ def delay_execute(function, arguments):
 def execute_stack():
     for stack in delay_stack:
         stack[0](*stack[1])
+        
+def count_variable_range(symbolTable, function, range):
+    count=0
+    variables = symbolTable[function].variables
+    for variable in variables:
+        if variable[3]==range:
+            count=count+1
+    return count
 
 """
 Un print qui ne fonctionne que si la variable afficher_table vaut Vrai.
@@ -220,24 +232,24 @@ Affiche le code nasm correspondant à une function operation
 """
 
 
-def gen_functionOperation(symbolTable, function, instruction: arbre_abstrait.FunctionOperation):
+def gen_functionOperation(symbolTable, function, instruction: arbre_abstrait.FunctionOperation, use_return=True):
     if instruction.name == "ecrire":
-        gen_ecrire(symbolTable, function, instruction)
+        gen_ecrire(symbolTable, function, arbre_abstrait.Ecrire(instruction.listeParameters.parameters[0]))
     elif instruction.name == "lire":
-        gen_lire(symbolTable, function)
+        gen_lire(symbolTable, function,use_return)
     else:
         variables = symbolTable[instruction.name].variables
         nasm_instruction("push","ebp","","","")
         nasm_instruction("mov","esi","esp","","")
         for param in instruction.listeParameters.parameters:
             gen_expression(symbolTable, function, param)
-            nasm_instruction("push","eax","","","")
         nasm_instruction("mov","ebp","esi","","")
-        nasm_instruction("sub","esp" , str(len(variables) * 4), "", "")
+        nasm_instruction("sub","esp" , str((len(variables) - count_variable_range(symbolTable,instruction.name,"P")) * 4), "", "")
         nasm_instruction("call", "_"+instruction.name, "", "", "")
         nasm_instruction("add", "esp" , str(len(variables) * 4),"","")
         nasm_instruction("pop","ebp", "","","")
-        nasm_instruction("push" ,"eax","","","")
+        if use_return:
+            nasm_instruction("push" ,"eax","","","")
 
 
 # ====================================================================================================
@@ -249,10 +261,7 @@ Affiche le code nasm correspondant à une instruction
 
 def gen_instruction(function, instruction, symbolTable):
     if type(instruction) == arbre_abstrait.FunctionOperation:
-        if instruction.name == "ecrire":
-            gen_ecrire(symbolTable, function, arbre_abstrait.Ecrire(instruction.listeParameters.parameters[0]))
-        if instruction.name == "lire":
-            gen_lire(symbolTable, function)
+        gen_functionOperation(symbolTable, function, instruction,False)
     elif type(instruction) == arbre_abstrait.DeclareOperation:
         gen_declaration(function, instruction, symbolTable)
     elif type(instruction) == arbre_abstrait.Operation:
@@ -268,8 +277,6 @@ def gen_instruction(function, instruction, symbolTable):
         delay_execute(gen_fonction, [symbolTable,instruction])
     elif type(instruction) == arbre_abstrait.ReturnOperation:
         gen_return(symbolTable, function, instruction)
-    elif type(instruction) == arbre_abstrait.FunctionOperation:
-        gen_functionOperation(symbolTable, function, instruction)
     # ====================================================================================================
     else:
         print("type instruction inconnu", type(instruction))
@@ -294,9 +301,13 @@ def gen_ecrire(symbolTable, function, ecrire):
     nasm_instruction("pop", "eax", "", "", "")  # on dépile la valeur d'expression sur eax
     nasm_instruction("call", "iprintLF", "", "", "")  # on envoie la valeur d'eax sur la sortie standard
     
-def gen_lire(symbolTable, function):
-    nasm_instruction("call", "readline", "","","")
-    nasm_instruction("push", "eax", "", "", "")
+def gen_lire(symbolTable, function,use_return):
+    nasm_instruction("mov","ebx","sinput","","")
+    nasm_instruction("call","readline","","","")
+    nasm_instruction("mov","eax", "sinput","","")
+    nasm_instruction("call","atoi","","","")
+    if use_return:
+        nasm_instruction("push", "eax", "", "", "")
 
 
 """

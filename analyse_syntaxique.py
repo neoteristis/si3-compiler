@@ -172,7 +172,7 @@ class FloParser(Parser):
 		print_debug(inspect.stack()[0][3]+":"+str(inspect.stack()[0][2]))
 		if type(p.equality_expression) == arbre_abstrait.Operation and p.equality_expression.op == "non":
 			if type(p.equality_expression.exp2) != arbre_abstrait.Boolean:
-				return arbre_abstrait.Operation("non", arbre_abstrait.NoneOperation(), arbre_abstrait.Operation("==", p.equality_expression.exp2, p.relational_expression))
+				return arbre_abstrait.Operation("non", arbre_abstrait.NoneOperation(), arbre_abstrait.Operation("!=", p.equality_expression.exp2, p.relational_expression))
 		return arbre_abstrait.Operation("!=", p.equality_expression, p.relational_expression)
 
 	@_("equality_expression")

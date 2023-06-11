@@ -5,7 +5,7 @@ total = 0
 score = 0
 
 def check(file_name,good_answer,lire=None):
-	
+	print(file_name)
 	command = './output/'+file_name
 	global total,score
 	total+=1

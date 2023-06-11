@@ -15,8 +15,8 @@ class Context:
         self.current_function=[]
     def addFunction(self, name, params, returnType):
         self.functions.append([name, params, returnType,len(self.functions)])
-    def addVariables(self, name, type):
-        self.variables.append([name,type,len(self.variables)])
+    def addVariables(self, name, type, range):
+        self.variables.append([name,type,len(self.variables),range])
     def setCurrentFunction(self, name, returnType):
         self.current_function=[name,returnType]
     def extend(self, context):
@@ -100,12 +100,12 @@ class BorrowChecker:
                 if type(expr)!=arbre_abstrait.NoneOperation:
                     if not self.checkType(typeExpr,instruction.type):
                         raise Exception("Bad type expression for " + instruction.name + " Find : " + str(typeExpr))
-                context.addVariables(instruction.name,instruction.type)
+                context.addVariables(instruction.name,instruction.type,"L")
             elif arbre_abstrait.Function == type(instruction):
                 args=instruction.args.declarations
                 self.symbolTable[instruction.name]=Context()
                 for arg in args:
-                    self.symbolTable[instruction.name].addVariables(arg.name,arg.type)
+                    self.symbolTable[instruction.name].addVariables(arg.name,arg.type,"P")
                 for function in context.functions:
                     self.symbolTable[instruction.name].functions.append(function)
                 self.symbolTable[instruction.name].setCurrentFunction(instruction.name, instruction.return_type)
